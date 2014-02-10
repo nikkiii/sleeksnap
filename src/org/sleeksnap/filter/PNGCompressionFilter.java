@@ -32,93 +32,107 @@ import org.sleeksnap.util.Util;
 import com.sun.jna.Platform;
 
 /**
- * An Experimental upload filter for compressing images through pngcrush or pngout
- * Warning: May make uploads slower than they already are! Crushing big images takes time.
+ * An Experimental upload filter for compressing images through pngcrush or
+ * pngout Warning: May make uploads slower than they already are! Crushing big
+ * images takes time.
  * 
  * @author Nikki
- *
+ * 
  */
 public class PNGCompressionFilter implements UploadFilter<ImageUpload> {
-	
+
 	/**
 	 * Logger object
 	 */
-	private static final Logger logger = Logger.getLogger(PNGCompressionFilter.class.getName());
+	private static final Logger logger = Logger
+			.getLogger(PNGCompressionFilter.class.getName());
 
 	/**
-	 * Location of the pngcrush program
-	 * pngcrush is faster than pngout.
+	 * Location of the pngcrush program pngcrush is faster than pngout.
 	 * Download: http://pmt.sourceforge.net/pngcrush/
 	 */
-	private static File pngCrushWindows = new File(Util.getWorkingDirectory(), "tools/pngcrush.exe"), pngCrushUnix = new File(Util.getWorkingDirectory(), "tools/pngcrush");
-	
+	private static File pngCrushWindows = new File(Util.getWorkingDirectory(),
+			"tools/pngcrush.exe"), pngCrushUnix = new File(
+			Util.getWorkingDirectory(), "tools/pngcrush");
+
 	/**
-	 * Location of the pngout program
-	 * pngout is slower than pngcrush, but has higher compression ratios.
-	 * Download: http://advsys.net/ken/util/pngout.exe
+	 * Location of the pngout program pngout is slower than pngcrush, but has
+	 * higher compression ratios. Download:
+	 * http://advsys.net/ken/util/pngout.exe
 	 */
-	private static File pngOutWindows = new File(Util.getWorkingDirectory(), "tools/pngout.exe"), pngOutUnix = new File(Util.getWorkingDirectory(), "tools/pngcrush");
-	
-	private ScreenSnapper parent;
-	
-	public PNGCompressionFilter(ScreenSnapper parent) {
+	private static File pngOutWindows = new File(Util.getWorkingDirectory(),
+			"tools/pngout.exe"), pngOutUnix = new File(
+			Util.getWorkingDirectory(), "tools/pngcrush");
+
+	private static String strPad(final String string, final char pad) {
+		return pad + string + pad;
+	}
+
+	private final ScreenSnapper parent;
+
+	public PNGCompressionFilter(final ScreenSnapper parent) {
 		this.parent = parent;
 	}
-	
+
 	@Override
-	public ImageUpload filter(ImageUpload object) throws FilterException {
-		if(parent.getConfiguration().getBoolean("compressImages")) {
+	public ImageUpload filter(final ImageUpload object) throws FilterException {
+		if (parent.getConfiguration().getBoolean("compressImages")) {
 			File pngOut = null;
 			File pngCrush = null;
-			if(Platform.isWindows()) {
+			if (Platform.isWindows()) {
 				pngCrush = pngCrushWindows;
 				pngOut = pngOutWindows;
 			} else {
 				pngCrush = pngCrushUnix;
 				pngOut = pngOutUnix;
 			}
-			if(pngOut.exists() || pngCrush.exists()) {
+			if (pngOut.exists() || pngCrush.exists()) {
 				try {
-					//TODO verify it is a png image.
-					File input = new File(Util.getWorkingDirectory(), "sleeksnap_original.png");
-					File output = new File(Util.getWorkingDirectory(), "sleeksnap_compressed.png");
-					
+					// TODO verify it is a png image.
+					final File input = new File(Util.getWorkingDirectory(),
+							"sleeksnap_original.png");
+					final File output = new File(Util.getWorkingDirectory(),
+							"sleeksnap_compressed.png");
+
 					ImageIO.write(object.getImage(), "png", input);
-					
-					String[] opts = new String[3];
-					opts[0] = strPad((pngOut.exists() ? pngOut : pngCrush).getAbsolutePath(), '"');
+
+					final String[] opts = new String[3];
+					opts[0] = strPad(
+							(pngOut.exists() ? pngOut : pngCrush)
+									.getAbsolutePath(),
+							'"');
 					opts[1] = strPad(input.getAbsolutePath(), '"');
 					opts[2] = strPad(output.getAbsolutePath(), '"');
-					
-					logger.info("Compressing image with "+(pngOut.exists() ? "pngout" : "pngcrush") +"...");
-					
-					Process p = Runtime.getRuntime().exec(opts);
-					BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-					
-					while(reader.readLine() != null) {
-						//Nothing.
+
+					logger.info("Compressing image with "
+							+ (pngOut.exists() ? "pngout" : "pngcrush") + "...");
+
+					final Process p = Runtime.getRuntime().exec(opts);
+					final BufferedReader reader = new BufferedReader(
+							new InputStreamReader(p.getInputStream()));
+
+					while (reader.readLine() != null) {
+						// Nothing.
 					}
-					
-					logger.info("Compressed image, original size: "+input.length()+", compressed size: "+output.length());
-					
+
+					logger.info("Compressed image, original size: "
+							+ input.length() + ", compressed size: "
+							+ output.length());
+
 					object.setImage(ImageIO.read(output));
-					
+
 					try {
-						//Finally, read the new file.
+						// Finally, read the new file.
 						return object;
 					} finally {
 						input.delete();
 						output.delete();
 					}
-				} catch (IOException e) {
+				} catch (final IOException e) {
 					throw new FilterException(e, "Unable to compress image");
 				}
 			}
 		}
 		return object;
-	}
-
-	private static String strPad(String string, char pad) {
-		return pad + string + pad;
 	}
 }

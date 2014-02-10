@@ -35,7 +35,7 @@ public abstract class GenericUploader extends Uploader<Upload> {
 	public abstract Uploader<?>[] getSubUploaders();
 
 	@Override
-	public String upload(Upload t) throws Exception {
+	public String upload(final Upload t) throws Exception {
 		return null;
 	}
 }

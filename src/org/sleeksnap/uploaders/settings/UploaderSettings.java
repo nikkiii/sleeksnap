@@ -54,69 +54,163 @@ public class UploaderSettings {
 	 * @param object
 	 *            The object to construct from
 	 */
-	public UploaderSettings(JSONObject object) {
-		this.settings = object;
+	public UploaderSettings(final JSONObject object) {
+		settings = object;
+	}
+
+	/**
+	 * Get a generic Object
+	 * 
+	 * @param name
+	 *            The object key
+	 * @return The object
+	 */
+	public Object get(final String name) {
+		return settings.get(name);
 	}
 
 	public JSONObject getBaseObject() {
 		return settings;
 	}
 
-	public int getInt(String key) {
+	public boolean getBoolean(final String key, final boolean defaultValue) {
+		return settings.getBoolean(key, defaultValue);
+	}
+
+	public int getInt(final String key) {
 		return settings.getInt(key);
 	}
 
-	public int getInt(String key, int defaultValue) {
+	public int getInt(final String key, final int defaultValue) {
 		return settings.getInt(key, defaultValue);
 	}
 
-	public String getString(String key) {
+	/**
+	 * Get a JSONObject value
+	 * 
+	 * @param string
+	 *            The object key
+	 * @return The JSONObject
+	 */
+	public JSONObject getJSONObject(final String string) {
+		return settings.getJSONObject(string);
+	}
+
+	/**
+	 * Get a password
+	 * 
+	 * TODO decrypt
+	 * 
+	 * @param key
+	 *            The key to get
+	 * @return The password
+	 */
+	public String getPassword(final String key) {
+		if (settings.has(key)) {
+			final JSONObject obj = settings.getJSONObject(key);
+			if (obj.getString("type").equals("password")) {
+				obj.getString("encrypted");
+			}
+		}
+		return null;
+	}
+
+	public String getString(final String key) {
 		return settings.getString(key);
 	}
 
-	public String getString(String key, String defaultValue) {
-		
+	public String getString(final String key, final String defaultValue) {
+
 		if (!settings.has(key)) {
 			return defaultValue;
 		}
 
 		return settings.getString(key);
 	}
-	
-	public String getStringBlankDefault(String key, String defaultValue) {
-		
+
+	public String getStringBlankDefault(final String key,
+			final String defaultValue) {
+
 		if (!settings.has(key)) {
 			return defaultValue;
 		}
-		
-		String ret = settings.getString(key);
-		
-		if(ret == null || ret.trim().equals("")) {
+
+		final String ret = settings.getString(key);
+
+		if (ret == null || ret.trim().equals("")) {
 			return defaultValue;
 		}
 
 		return ret;
 	}
 
-	public boolean has(String name) {
+	public boolean has(final String name) {
 		return settings.has(name);
 	}
 
-	public void load(File file) throws IOException {
-		FileInputStream input = new FileInputStream(file);
+	public boolean isEmpty(final String string) {
+		return settings.getString(string, "").equals("");
+	}
+
+	public void load(final File file) throws IOException {
+		final FileInputStream input = new FileInputStream(file);
 		try {
-			this.settings = new JSONObject(new JSONTokener(input));
+			settings = new JSONObject(new JSONTokener(input));
 		} finally {
 			input.close();
 		}
 	}
 
-	public void remove(String string) {
+	public void remove(final String string) {
 		settings.remove(string);
 	}
 
-	public void set(String string, Object value) {
+	/**
+	 * Save the settings to a specific file
+	 * 
+	 * @param file
+	 *            The file to save to
+	 * @throws IOException
+	 *             If an error occurs
+	 */
+	public void save(final File file) throws IOException {
+		final FileOutputStream output = new FileOutputStream(file);
+		try {
+			saveTo(output);
+		} finally {
+			output.close();
+		}
+	}
+
+	/**
+	 * Write the JSON to an OutputStream (Using write to an OutputStreamWriter
+	 * does not work for some reason)
+	 * 
+	 * @param out
+	 *            The output stream to write to
+	 * @throws IOException
+	 *             If an error occurs while writing
+	 */
+	public void saveTo(final OutputStream out) throws IOException {
+		try {
+			out.write(settings.toString(4).getBytes());
+		} catch (final JSONException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void set(final String string, final Object value) {
 		settings.put(string, value);
+	}
+
+	/**
+	 * Set the JSONObject which this settings object gets it's information from
+	 * 
+	 * @param object
+	 *            The object
+	 */
+	public void setBaseObject(final JSONObject object) {
+		settings = object;
 	}
 
 	/**
@@ -129,91 +223,10 @@ public class UploaderSettings {
 	 * @param value
 	 *            The password
 	 */
-	public void setPassword(String key, Object value) {
+	public void setPassword(final String key, final Object value) {
 		set(key, value.toString());
 	}
-	
-	/**
-	 * Get a password
-	 * 
-	 * TODO decrypt
-	 * @param key
-	 * 			The key to get
-	 * @return
-	 * 			The password
-	 */
-	public String getPassword(String key) {
-		if(settings.has(key)) {
-			JSONObject obj = settings.getJSONObject(key);
-			if(obj.getString("type").equals("password")) {
-				obj.getString("encrypted");
-			}
-		}
-		return null;
-	}
 
-	/**
-	 * Write the JSON to an OutputStream (Using write to an OutputStreamWriter does not work for some reason)
-	 * @param out
-	 * 			The output stream to write to
-	 * @throws IOException
-	 * 			If an error occurs while writing
-	 */
-	public void saveTo(OutputStream out) throws IOException {
-		try {
-			out.write(settings.toString(4).getBytes());
-		} catch(JSONException e) {
-			e.printStackTrace();
-		}
-	}
-
-	/**
-	 * Save the settings to a specific file
-	 * @param file
-	 * 			The file to save to
-	 * @throws IOException
-	 * 			If an error occurs
-	 */
-	public void save(File file) throws IOException {
-		FileOutputStream output = new FileOutputStream(file);
-		try {
-			saveTo(output);
-		} finally {
-			output.close();
-		}
-	}
-
-	/**
-	 * Set the JSONObject which this settings object gets it's information from
-	 * @param object
-	 * 			The object
-	 */
-	public void setBaseObject(JSONObject object) {
-		this.settings = object;
-	}
-
-	/**
-	 * Get a generic Object
-	 * @param name
-	 * 			The object key
-	 * @return
-	 * 			The object
-	 */
-	public Object get(String name) {
-		return settings.get(name);
-	}
-
-	/**
-	 * Get a JSONObject value
-	 * @param string
-	 * 			The object key
-	 * @return
-	 * 			The JSONObject
-	 */
-	public JSONObject getJSONObject(String string) {
-		return settings.getJSONObject(string);
-	}
-	
 	/**
 	 * Get this object as a JSON String
 	 * 
@@ -222,13 +235,5 @@ public class UploaderSettings {
 	@Override
 	public String toString() {
 		return settings.toString();
-	}
-
-	public boolean isEmpty(String string) {
-		return settings.getString(string, "").equals("");
-	}
-
-	public boolean getBoolean(String key, boolean defaultValue) {
-		return settings.getBoolean(key, defaultValue);
 	}
 }

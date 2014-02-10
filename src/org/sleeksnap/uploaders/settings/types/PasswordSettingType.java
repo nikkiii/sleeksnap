@@ -26,23 +26,23 @@ import org.sleeksnap.uploaders.settings.UploaderSettingType;
  * A basic setting type for Passwords
  * 
  * @author Nikki
- *
+ * 
  */
 public class PasswordSettingType implements UploaderSettingType {
 
 	@Override
-	public JComponent constructComponent(String defaultValue) {
+	public JComponent constructComponent(final String defaultValue) {
 		return new JPasswordField(defaultValue);
 	}
 
 	@Override
-	public void setValue(JComponent component, Object value) {
-		((JPasswordField) component).setText(value.toString());
+	public Object getValue(final JComponent component) {
+		return new String(((JPasswordField) component).getPassword());
 	}
 
 	@Override
-	public Object getValue(JComponent component) {
-		return new String(((JPasswordField) component).getPassword());
+	public void setValue(final JComponent component, final Object value) {
+		((JPasswordField) component).setText(value.toString());
 	}
-	
+
 }

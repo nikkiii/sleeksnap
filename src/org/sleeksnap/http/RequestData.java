@@ -28,43 +28,43 @@ import java.util.Map;
  * 
  */
 public class RequestData {
-	
+
 	/**
 	 * The data map used to store values
 	 */
-	private Map<String, Object> data = new HashMap<String, Object>();
-	
+	private final Map<String, Object> data = new HashMap<String, Object>();
+
+	/**
+	 * Get a value
+	 * 
+	 * @param key
+	 *            The key to get the value for
+	 * @return The value, or null if not found
+	 */
+	public Object get(final String key) {
+		return data.get(key);
+	}
+
 	/**
 	 * Set a key to a value
+	 * 
 	 * @param key
-	 * 			The key to set
+	 *            The key to set
 	 * @param value
-	 * 			The value to set
-	 * @return
-	 * 			The RequestData instance for chaining
+	 *            The value to set
+	 * @return The RequestData instance for chaining
 	 */
-	public RequestData put(String key, Object value) {
+	public RequestData put(final String key, final Object value) {
 		data.put(key, value);
 		return this;
 	}
-	
-	/**
-	 * Get a value
-	 * @param key
-	 * 			The key to get the value for
-	 * @return
-	 * 			The value, or null if not found
-	 */
-	public Object get(String key) {
-		return data.get(key);
-	}
-	
+
 	/**
 	 * Transform this data into a URLEncoded string
-	 * @return
-	 * 			The URL Encoded String
+	 * 
+	 * @return The URL Encoded String
 	 * @throws IOException
-	 * 			If an encoding error occurs
+	 *             If an encoding error occurs
 	 */
 	public String toURLEncodedString() throws IOException {
 		return HttpUtil.implode(data);

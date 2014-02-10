@@ -27,16 +27,16 @@ import org.sleeksnap.util.Utils.ImageUtil;
  * An Image based Upload
  * 
  * @author Nikki
- *
+ * 
  */
 public class ImageUpload implements Upload {
-	
+
 	/**
 	 * The BufferedImage we are uploading
 	 */
 	private BufferedImage image;
-	
-	public ImageUpload(BufferedImage image) {
+
+	public ImageUpload(final BufferedImage image) {
 		this.image = image;
 	}
 
@@ -44,33 +44,34 @@ public class ImageUpload implements Upload {
 	public InputStream asInputStream() throws IOException {
 		return ImageUtil.toInputStream(image);
 	}
-	
+
 	/**
-	 * Covert this image into a Base64 string
-	 * @return
-	 * 			The image in base64
-	 * @throws IOException
-	 * 			If an error occurred while writing/reading into base64
+	 * Get this upload's image
+	 * 
+	 * @return The image of the upload
 	 */
-	public String toBase64() throws IOException {
-		return ImageUtil.toBase64(image);
+	public BufferedImage getImage() {
+		return image;
 	}
 
 	/**
 	 * Set this upload's image
+	 * 
 	 * @param image
-	 * 			The image to set
+	 *            The image to set
 	 */
-	public void setImage(BufferedImage image) {
+	public void setImage(final BufferedImage image) {
 		this.image = image;
 	}
 
 	/**
-	 * Get this upload's image
-	 * @return
-	 * 		The image of the upload
+	 * Covert this image into a Base64 string
+	 * 
+	 * @return The image in base64
+	 * @throws IOException
+	 *             If an error occurred while writing/reading into base64
 	 */
-	public BufferedImage getImage() {
-		return image;
+	public String toBase64() throws IOException {
+		return ImageUtil.toBase64(image);
 	}
 }

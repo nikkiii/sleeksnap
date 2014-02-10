@@ -32,15 +32,17 @@ import org.sleeksnap.util.logging.LogPanelHandler;
  * 
  */
 public class LoggingManager {
-	
+
 	/**
 	 * Load the configuration from a byte array
-	 * @throws IOException 
+	 * 
+	 * @throws IOException
 	 */
 	@SuppressWarnings("unchecked")
 	public static void configure() throws IOException {
-		LoggerConfiguration config = new LoggerConfiguration();
-		config.addHandlers(ConsoleHandler.class, FileLogHandler.class, LogPanelHandler.class);
+		final LoggerConfiguration config = new LoggerConfiguration();
+		config.addHandlers(ConsoleHandler.class, FileLogHandler.class,
+				LogPanelHandler.class);
 		config.setLevel(Level.INFO);
 		config.apply();
 	}

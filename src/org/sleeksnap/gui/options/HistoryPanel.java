@@ -50,21 +50,54 @@ import org.sleeksnap.util.Utils.ClipboardUtil;
 @SuppressWarnings({ "serial", "unchecked", "rawtypes", "unused" })
 public class HistoryPanel extends OptionSubPanel {
 
-	private OptionPanel parent;
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 3126147885880571093L;
 
-	private JList historyList;
-
-	private JButton historySelect;
-	private JButton historyOpen;
 	private JButton historyCopy;
 
-	private JTextField linkField;
-
-	private JLabel linkLabel;
+	private JList historyList;
+	private JButton historyOpen;
 	private JScrollPane historyScroll;
 
-	public HistoryPanel(OptionPanel parent) {
+	private JButton historySelect;
 
+	private JTextField linkField;
+	private JLabel linkLabel;
+
+	public HistoryPanel(final OptionPanel parent) {
+
+	}
+
+	private void historyCopyActionPerformed(final java.awt.event.ActionEvent evt) {
+		final String text = linkField.getText();
+		if (!text.equals("")) {
+			ClipboardUtil.setClipboard(text);
+		}
+	}
+
+	private void historyOpenActionPerformed(final java.awt.event.ActionEvent evt) {
+		final String text = linkField.getText();
+		if (!text.equals("")) {
+			try {
+				Desktop.getDesktop().browse(new URL(text).toURI());
+			} catch (final MalformedURLException e) {
+				e.printStackTrace();
+			} catch (final IOException e) {
+				e.printStackTrace();
+			} catch (final URISyntaxException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private void historySelectActionPerformed(
+			final java.awt.event.ActionEvent evt) {
+		final String text = linkField.getText();
+		if (!text.equals("")) {
+			linkField.select(0, text.length());
+		}
 	}
 
 	@Override
@@ -81,11 +114,11 @@ public class HistoryPanel extends OptionSubPanel {
 
 		historyList.addListSelectionListener(new ListSelectionListener() {
 			@Override
-			public void valueChanged(ListSelectionEvent e) {
+			public void valueChanged(final ListSelectionEvent e) {
 				if (!e.getValueIsAdjusting()) {
-					Object value = historyList.getSelectedValue();
+					final Object value = historyList.getSelectedValue();
 					if (value != null) {
-						HistoryEntry entry = (HistoryEntry) value;
+						final HistoryEntry entry = (HistoryEntry) value;
 						linkField.setText(entry.getUrl());
 					}
 				}
@@ -100,27 +133,30 @@ public class HistoryPanel extends OptionSubPanel {
 
 		historyOpen.setText("Open");
 		historyOpen.addActionListener(new java.awt.event.ActionListener() {
-			public void actionPerformed(java.awt.event.ActionEvent evt) {
+			@Override
+			public void actionPerformed(final java.awt.event.ActionEvent evt) {
 				historyOpenActionPerformed(evt);
 			}
 		});
 
 		historyCopy.setText("Copy");
 		historyCopy.addActionListener(new java.awt.event.ActionListener() {
-			public void actionPerformed(java.awt.event.ActionEvent evt) {
+			@Override
+			public void actionPerformed(final java.awt.event.ActionEvent evt) {
 				historyCopyActionPerformed(evt);
 			}
 		});
 
 		historySelect.setText("Select");
 		historySelect.addActionListener(new java.awt.event.ActionListener() {
-			public void actionPerformed(java.awt.event.ActionEvent evt) {
+			@Override
+			public void actionPerformed(final java.awt.event.ActionEvent evt) {
 				historySelectActionPerformed(evt);
 			}
 		});
 
-		GroupLayout historyPanelLayout = new GroupLayout(this);
-		this.setLayout(historyPanelLayout);
+		final GroupLayout historyPanelLayout = new GroupLayout(this);
+		setLayout(historyPanelLayout);
 		historyPanelLayout
 				.setHorizontalGroup(historyPanelLayout
 						.createParallelGroup(GroupLayout.Alignment.LEADING)
@@ -199,38 +235,9 @@ public class HistoryPanel extends OptionSubPanel {
 										.addContainerGap()));
 	}
 
-	private void historyCopyActionPerformed(java.awt.event.ActionEvent evt) {
-		String text = linkField.getText();
-		if (!text.equals("")) {
-			ClipboardUtil.setClipboard(text);
-		}
-	}
-
-	private void historyOpenActionPerformed(java.awt.event.ActionEvent evt) {
-		String text = linkField.getText();
-		if (!text.equals("")) {
-			try {
-				Desktop.getDesktop().browse(new URL(text).toURI());
-			} catch (MalformedURLException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (URISyntaxException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	private void historySelectActionPerformed(java.awt.event.ActionEvent evt) {
-		String text = linkField.getText();
-		if (!text.equals("")) {
-			linkField.select(0, text.length());
-		}
-	}
-
-	public void setHistory(History history) {
-		DefaultListModel model = new DefaultListModel();
-		List<HistoryEntry> list = history.getHistory();
+	public void setHistory(final History history) {
+		final DefaultListModel model = new DefaultListModel();
+		final List<HistoryEntry> list = history.getHistory();
 		for (int i = list.size() - 1; i >= 0; i--) {
 			model.addElement(list.get(i));
 		}

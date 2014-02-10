@@ -31,7 +31,6 @@ import java.util.Map.Entry;
 import org.sleeksnap.util.StreamUtils;
 import org.sleeksnap.util.Util;
 
-
 /**
  * A simple HTTP Utility which assists with POST/GET methods
  * 
@@ -47,10 +46,10 @@ public class HttpUtil {
 	 *            The string
 	 * @return The encoded string
 	 */
-	public static String encode(String string) {
+	public static String encode(final String string) {
 		try {
 			return URLEncoder.encode(string, "UTF-8");
-		} catch (UnsupportedEncodingException e) {
+		} catch (final UnsupportedEncodingException e) {
 			// Ignored
 		}
 		return string;
@@ -65,8 +64,25 @@ public class HttpUtil {
 	 * @throws IOException
 	 *             If an error occurred
 	 */
-	public static String executeGet(String url) throws IOException {
+	public static String executeGet(final String url) throws IOException {
 		return executeGet(new URL(url));
+	}
+
+	/**
+	 * Executes a GET request with the specified query
+	 * 
+	 * @param url
+	 *            The URL
+	 * @param data
+	 *            The GET query
+	 * 
+	 * @return The response
+	 * @throws IOException
+	 *             If an error occurred
+	 */
+	public static String executeGet(final String url, final RequestData data)
+			throws IOException {
+		return executeGet(url + '?' + data.toURLEncodedString());
 	}
 
 	/**
@@ -78,59 +94,28 @@ public class HttpUtil {
 	 * @throws IOException
 	 *             If an error occurred
 	 */
-	public static String executeGet(URL url) throws IOException {
+	public static String executeGet(final URL url) throws IOException {
 		return StreamUtils.readContents(url.openStream());
 	}
 
 	/**
-	 * Executes a GET request with the specified query
+	 * Executes a GET request with the specified query Wrapper for
+	 * <code>executeGet(String, RequestData)</code>
 	 * 
 	 * @param url
 	 *            The URL
 	 * @param data
-	 * 			  The GET query
-	 * 
+	 *            The GET query
 	 * @return The response
 	 * @throws IOException
 	 *             If an error occurred
 	 */
-	public static String executeGet(String url, RequestData data) throws IOException {
-		return executeGet(url + '?' + data.toURLEncodedString());
-	}
-
-	/**
-	 * Executes a GET request with the specified query
-	 * Wrapper for <code>executeGet(String, RequestData)</code>
-	 * 
-	 * @param url
-	 *            The URL
-	 * @param data
-	 * 			  The GET query
-	 * @return The response
-	 * @throws IOException
-	 *             If an error occurred
-	 */
-	public static String executeGet(URL url, RequestData data) throws IOException {
+	public static String executeGet(final URL url, final RequestData data)
+			throws IOException {
 		return executeGet(url.toString(), data);
 	}
 
 	/**
-	 * Alias for <code>executePost(URL url, String data)</code>, constructs the
-	 * url
-	 * 
-	 * @param url
-	 *            The URL
-	 * @param data
-	 *            The data
-	 * @return The response
-	 * @throws IOException
-	 *             If an error occurred
-	 */
-	public static String executePost(String url, String data) throws IOException {
-		return executePost(new URL(url), data, ResponseType.CONTENTS);
-	}
-	
-	/**
 	 * POST to the specified URL with the specified map of values.
 	 * 
 	 * @param url
@@ -141,11 +126,11 @@ public class HttpUtil {
 	 * @throws IOException
 	 *             If an error occurred while connecting/receiving the data
 	 */
-	public static String executePost(String url, RequestData data)
+	public static String executePost(final String url, final RequestData data)
 			throws IOException {
 		return executePost(url, data.toURLEncodedString());
 	}
-	
+
 	/**
 	 * Alias for <code>executePost(URL url, String data)</code>, constructs the
 	 * url
@@ -158,26 +143,46 @@ public class HttpUtil {
 	 * @throws IOException
 	 *             If an error occurred
 	 */
-	public static String executePost(String url, String data, ResponseType responseType) throws IOException {
+	public static String executePost(final String url, final RequestData data,
+			final ResponseType responseType) throws IOException {
+		return executePost(new URL(url), data.toURLEncodedString(),
+				responseType);
+	}
+
+	/**
+	 * Alias for <code>executePost(URL url, String data)</code>, constructs the
+	 * url
+	 * 
+	 * @param url
+	 *            The URL
+	 * @param data
+	 *            The data
+	 * @return The response
+	 * @throws IOException
+	 *             If an error occurred
+	 */
+	public static String executePost(final String url, final String data)
+			throws IOException {
+		return executePost(new URL(url), data, ResponseType.CONTENTS);
+	}
+
+	/**
+	 * Alias for <code>executePost(URL url, String data)</code>, constructs the
+	 * url
+	 * 
+	 * @param url
+	 *            The URL
+	 * @param data
+	 *            The data
+	 * @return The response
+	 * @throws IOException
+	 *             If an error occurred
+	 */
+	public static String executePost(final String url, final String data,
+			final ResponseType responseType) throws IOException {
 		return executePost(new URL(url), data, responseType);
 	}
-	
-	/**
-	 * Alias for <code>executePost(URL url, String data)</code>, constructs the
-	 * url
-	 * 
-	 * @param url
-	 *            The URL
-	 * @param data
-	 *            The data
-	 * @return The response
-	 * @throws IOException
-	 *             If an error occurred
-	 */
-	public static String executePost(String url, RequestData data, ResponseType responseType) throws IOException {
-		return executePost(new URL(url), data.toURLEncodedString(), responseType);
-	}
-	
+
 	/**
 	 * POST to the specified URL with the specified map of values.
 	 * 
@@ -189,10 +194,12 @@ public class HttpUtil {
 	 * @throws IOException
 	 *             If an error occurred while connecting/receiving the data
 	 */
-	public static String executePost(URL url, RequestData data) throws IOException {
-		return executePost(url, data.toURLEncodedString(), ResponseType.CONTENTS);
+	public static String executePost(final URL url, final RequestData data)
+			throws IOException {
+		return executePost(url, data.toURLEncodedString(),
+				ResponseType.CONTENTS);
 	}
-	
+
 	/**
 	 * Execute a POST request
 	 * 
@@ -204,27 +211,31 @@ public class HttpUtil {
 	 * @throws IOException
 	 *             If an error occurred
 	 */
-	public static String executePost(URL url, String data, ResponseType responseType) throws IOException {
+	public static String executePost(final URL url, final String data,
+			final ResponseType responseType) throws IOException {
 		// Set redirect following to false if we want the redirect url
 		if (responseType == ResponseType.REDIRECT_URL) {
 			HttpURLConnection.setFollowRedirects(false);
 		}
 		// Execute the request
-		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+		final HttpURLConnection connection = (HttpURLConnection) url
+				.openConnection();
 		connection.setRequestProperty("User-Agent", Util.getHttpUserAgent());
 		connection.setDoOutput(true);
 		try {
-			OutputStreamWriter writer = new OutputStreamWriter(
+			final OutputStreamWriter writer = new OutputStreamWriter(
 					connection.getOutputStream());
 			writer.write(data);
 			writer.flush();
 			writer.close();
 
-			switch(responseType) {
+			switch (responseType) {
 			case REDIRECT_URL:
-				String location = connection.getHeaderField("Location");
+				final String location = connection.getHeaderField("Location");
 				if (location == null) {
-					throw new IOException("No location header found, body: " + StreamUtils.readContents(connection.getInputStream()));
+					throw new IOException("No location header found, body: "
+							+ StreamUtils.readContents(connection
+									.getInputStream()));
 				}
 				return location;
 			default:
@@ -232,12 +243,12 @@ public class HttpUtil {
 			}
 		} finally {
 			connection.disconnect();
-			
+
 			// Reset redirect following
 			HttpURLConnection.setFollowRedirects(true);
 		}
 	}
-	
+
 	/**
 	 * Implode a map of key -> value pairs to a URL safe string
 	 * 
@@ -245,38 +256,44 @@ public class HttpUtil {
 	 *            The values to implode
 	 * @return The imploded string
 	 * @throws IOException
-	 *             If an error occurred while encoding any values. 
+	 *             If an error occurred while encoding any values.
 	 */
-	public static String implode(Map<String, Object> values) throws IOException {
-		StringBuilder builder = new StringBuilder();
-		Iterator<Entry<String, Object>> iterator = values.entrySet().iterator();
+	public static String implode(final Map<String, Object> values)
+			throws IOException {
+		final StringBuilder builder = new StringBuilder();
+		final Iterator<Entry<String, Object>> iterator = values.entrySet()
+				.iterator();
 		while (iterator.hasNext()) {
-			Entry<String, Object> entry = iterator.next();
+			final Entry<String, Object> entry = iterator.next();
 			builder.append(entry.getKey());
 
 			if (entry.getValue() != null) {
-				builder.append("=").append(URLEncoder.encode(entry.getValue().toString(), "UTF-8"));
+				builder.append("=")
+						.append(URLEncoder.encode(entry.getValue().toString(),
+								"UTF-8"));
 			}
-			if (iterator.hasNext())
+			if (iterator.hasNext()) {
 				builder.append("&");
+			}
 		}
 		return builder.toString();
 	}
 
 	/**
 	 * Parse an http query string
+	 * 
 	 * @param string
-	 * 			The string to parse
-	 * @return
-	 * 			The parsed string in a map.
+	 *            The string to parse
+	 * @return The parsed string in a map.
 	 */
-	public static Map<String, String> parseQueryString(String string) {
-		Map<String, String> values = new HashMap<String, String>();
-		String[] split = string.split("&");
+	public static Map<String, String> parseQueryString(final String string) {
+		final Map<String, String> values = new HashMap<String, String>();
+		final String[] split = string.split("&");
 
-		for(String s : split) {
-			if(s.indexOf('=') != -1) {
-				values.put(s.substring(0, s.indexOf('=')), s.substring(s.indexOf('=')+1));
+		for (final String s : split) {
+			if (s.indexOf('=') != -1) {
+				values.put(s.substring(0, s.indexOf('=')),
+						s.substring(s.indexOf('=') + 1));
 			} else {
 				values.put(s, null);
 			}

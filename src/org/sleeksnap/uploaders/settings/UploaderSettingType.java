@@ -23,13 +23,13 @@ import javax.swing.JComponent;
  * An interface used to define new setting types.
  * 
  * @author Nikki
- *
+ * 
  */
 public interface UploaderSettingType {
 
 	public JComponent constructComponent(String defaultValue);
-	
-	public void setValue(JComponent component, Object value);
-	
+
 	public Object getValue(JComponent component);
+
+	public void setValue(JComponent component, Object value);
 }

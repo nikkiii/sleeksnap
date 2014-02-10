@@ -39,14 +39,14 @@ import org.sleeksnap.util.StreamUtils;
 public class History {
 
 	/**
+	 * The file to load/save to
+	 */
+	private final File file;
+
+	/**
 	 * The history storage class
 	 */
 	private List<HistoryEntry> history = new LinkedList<HistoryEntry>();
-
-	/**
-	 * The file to load/save to
-	 */
-	private File file;
 
 	/**
 	 * Initialize a new instance with the specified file
@@ -54,7 +54,7 @@ public class History {
 	 * @param file
 	 *            The file to use for storage
 	 */
-	public History(File file) {
+	public History(final File file) {
 		this.file = file;
 	}
 
@@ -66,9 +66,9 @@ public class History {
 	 * @throws IOException
 	 *             Thrown if an error occurred while saving, notify that local
 	 *             history is disabled?
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
-	public void addEntry(HistoryEntry entry) throws IOException {
+	public void addEntry(final HistoryEntry entry) throws IOException {
 		addEntry(entry, true);
 	}
 
@@ -82,9 +82,10 @@ public class History {
 	 * @throws IOException
 	 *             Thrown if an error occurred while saving, notify that local
 	 *             history is disabled?
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
-	public void addEntry(HistoryEntry entry, boolean save) throws IOException {
+	public void addEntry(final HistoryEntry entry, final boolean save)
+			throws IOException {
 		synchronized (history) {
 			history.add(entry);
 			if (save) {
@@ -107,14 +108,15 @@ public class History {
 	 * 
 	 * @throws IOException
 	 *             If an error occurs reading the file
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
 	public void load() throws IOException {
-		InputStream input = new FileInputStream(file);
+		final InputStream input = new FileInputStream(file);
 		try {
 			history = new LinkedList<HistoryEntry>();
-			JSONArray array = new JSONArray(StreamUtils.readContents(input));
-			for(int i = 0; i < array.length(); i++) {
+			final JSONArray array = new JSONArray(
+					StreamUtils.readContents(input));
+			for (int i = 0; i < array.length(); i++) {
 				history.add(new HistoryEntry(array.getJSONObject(i)));
 			}
 		} finally {
@@ -127,13 +129,13 @@ public class History {
 	 * 
 	 * @throws IOException
 	 *             If an error occurs saving the file
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
 	private void save() throws IOException {
-		OutputStream output = new FileOutputStream(file);
+		final OutputStream output = new FileOutputStream(file);
 		try {
-			JSONArray array = new JSONArray();
-			for(HistoryEntry e : history) {
+			final JSONArray array = new JSONArray();
+			for (final HistoryEntry e : history) {
 				array.put(e.toJSONObject());
 			}
 			output.write(array.toString().getBytes());

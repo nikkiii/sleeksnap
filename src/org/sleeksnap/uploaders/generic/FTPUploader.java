@@ -46,58 +46,22 @@ public class FTPUploader extends GenericUploader {
 	 */
 
 	/**
-	 * The uploader array
-	 */
-	private Uploader<?>[] uploaders = new Uploader<?>[] {
-			new FTPImageUploader(), new FTPTextUploader(),
-			new FTPFileUploader() };
-
-	/**
-	 * Upload a file to the FTP server
+	 * An uploader to deal with File uploads
 	 * 
-	 * @param fileName
-	 *            The filename
-	 * @param input
-	 *            The input stream
-	 * @return The final URL
-	 * @throws IOException
-	 *             If an error occurred
+	 * @author Nikki
+	 * 
 	 */
-	public String ftpUpload(String fileName, InputStream input)
-			throws IOException, UploaderConfigurationException {
-		if (!settings.has("hostname") && !settings.isEmpty("hostname")
-				|| !settings.has("username") && !settings.isEmpty("username")
-				|| !settings.has("password") // Password can be empty.
-				|| !settings.has("baseurl") && !settings.isEmpty("baseurl")) {
-			throw new UploaderConfigurationException(
-					"Missing hostname, username, password or baseurl!");
+	public class FTPFileUploader extends Uploader<FileUpload> {
+
+		@Override
+		public String getName() {
+			return FTPUploader.this.getName();
 		}
-		SimpleFTP ftp = new SimpleFTP();
-		
-		try {
-			ftp.connect(settings.getString("hostname"), settings.getInt("port", 21), settings.getString("username"), settings.getString("password"));
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new UploaderConfigurationException("Unable to connect to FTP server, please check your username and password.");
+
+		@Override
+		public String upload(final FileUpload t) throws Exception {
+			return ftpUpload(generateFileName(t), t.asInputStream());
 		}
-		
-		if (settings.has("remotedir") && !settings.isEmpty("remotedir")) {
-			if(!ftp.cwd(settings.getString("remotedir"))) {
-				throw new UploaderConfigurationException("Unable to change FTP directory.");
-			}
-		}
-		
-		try {
-			ftp.stor(input, fileName);
-		} finally {
-			ftp.disconnect();
-			input.close();
-		}
-		String baseUrl = settings.getString("baseurl", "%s");
-		if(!baseUrl.contains("%s")) {
-			baseUrl = baseUrl + "%s";
-		}
-		return String.format(baseUrl, fileName);
 	}
 
 	/**
@@ -114,7 +78,7 @@ public class FTPUploader extends GenericUploader {
 		}
 
 		@Override
-		public String upload(ImageUpload t) throws Exception {
+		public String upload(final ImageUpload t) throws Exception {
 			return ftpUpload(generateFileName(t), t.asInputStream());
 		}
 	}
@@ -133,28 +97,69 @@ public class FTPUploader extends GenericUploader {
 		}
 
 		@Override
-		public String upload(TextUpload t) throws Exception {
+		public String upload(final TextUpload t) throws Exception {
 			return ftpUpload(generateFileName(t), t.asInputStream());
 		}
 	}
 
 	/**
-	 * An uploader to deal with File uploads
-	 * 
-	 * @author Nikki
-	 * 
+	 * The uploader array
 	 */
-	public class FTPFileUploader extends Uploader<FileUpload> {
+	private final Uploader<?>[] uploaders = new Uploader<?>[] {
+			new FTPImageUploader(), new FTPTextUploader(),
+			new FTPFileUploader() };
 
-		@Override
-		public String getName() {
-			return FTPUploader.this.getName();
+	/**
+	 * Upload a file to the FTP server
+	 * 
+	 * @param fileName
+	 *            The filename
+	 * @param input
+	 *            The input stream
+	 * @return The final URL
+	 * @throws IOException
+	 *             If an error occurred
+	 */
+	public String ftpUpload(final String fileName, final InputStream input)
+			throws IOException, UploaderConfigurationException {
+		if (!settings.has("hostname") && !settings.isEmpty("hostname")
+				|| !settings.has("username") && !settings.isEmpty("username")
+				|| !settings.has("password") // Password can be empty.
+				|| !settings.has("baseurl") && !settings.isEmpty("baseurl")) {
+			throw new UploaderConfigurationException(
+					"Missing hostname, username, password or baseurl!");
+		}
+		final SimpleFTP ftp = new SimpleFTP();
+
+		try {
+			ftp.connect(settings.getString("hostname"),
+					settings.getInt("port", 21),
+					settings.getString("username"),
+					settings.getString("password"));
+		} catch (final IOException e) {
+			e.printStackTrace();
+			throw new UploaderConfigurationException(
+					"Unable to connect to FTP server, please check your username and password.");
 		}
 
-		@Override
-		public String upload(FileUpload t) throws Exception {
-			return ftpUpload(generateFileName(t), t.asInputStream());
+		if (settings.has("remotedir") && !settings.isEmpty("remotedir")) {
+			if (!ftp.cwd(settings.getString("remotedir"))) {
+				throw new UploaderConfigurationException(
+						"Unable to change FTP directory.");
+			}
 		}
+
+		try {
+			ftp.stor(input, fileName);
+		} finally {
+			ftp.disconnect();
+			input.close();
+		}
+		String baseUrl = settings.getString("baseurl", "%s");
+		if (!baseUrl.contains("%s")) {
+			baseUrl = baseUrl + "%s";
+		}
+		return String.format(baseUrl, fileName);
 	}
 
 	/**
@@ -165,7 +170,7 @@ public class FTPUploader extends GenericUploader {
 	 *            The object to be uploaded
 	 * @return The filename
 	 */
-	public String generateFileName(Object object) {
+	public String generateFileName(final Object object) {
 		String name = DateUtil.getCurrentDate();
 		if (object instanceof ImageUpload) {
 			name += ".png";
@@ -180,12 +185,12 @@ public class FTPUploader extends GenericUploader {
 	}
 
 	@Override
-	public Uploader<?>[] getSubUploaders() {
-		return uploaders;
+	public String getName() {
+		return "FTP Server";
 	}
 
 	@Override
-	public String getName() {
-		return "FTP Server";
+	public Uploader<?>[] getSubUploaders() {
+		return uploaders;
 	}
 }

@@ -20,9 +20,8 @@ package com.tulskiy.keymaster.common;
 import java.util.EventListener;
 
 /**
- * Author: Denis Tulskiy
- * Date: 6/21/11
+ * Author: Denis Tulskiy Date: 6/21/11
  */
 public interface HotKeyListener extends EventListener {
-    public void onHotKey(HotKey hotKey);
+	public void onHotKey(HotKey hotKey);
 }

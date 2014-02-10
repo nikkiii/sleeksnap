@@ -34,8 +34,30 @@ import org.sleeksnap.uploaders.settings.UploaderSettings;
  * @author Nikki
  * 
  */
-@Settings(required = { }, optional = { "username", "password|password", "paste_exposure|combobox[Public,Unlisted,Private]", "expiration|combobox[Never,10 minutes,1 hour,1 day,1 week,2 weeks,1 month]" })
+@Settings(required = {}, optional = { "username", "password|password",
+		"paste_exposure|combobox[Public,Unlisted,Private]",
+		"expiration|combobox[Never,10 minutes,1 hour,1 day,1 week,2 weeks,1 month]" })
 public class PastebinUploader extends Uploader<TextUpload> {
+
+	/**
+	 * Pastebin exposure settings.
+	 * 
+	 * Documented as: We have 3 valid values available which you can use with
+	 * the 'api_paste_private' parameter: 0 = Public 1 = Unlisted 2 = Private
+	 * (only allowed in combination with api_user_key, as you have to be logged
+	 * into your account to access the paste)
+	 * 
+	 * @author Nikki
+	 * 
+	 */
+	private enum PastebinExposure {
+		Private, Public, Unlisted
+	}
+
+	/**
+	 * The URL of the API Auth page
+	 */
+	private static final String API_AUTH_URL = "http://pastebin.com/api/api_login.php";
 
 	/**
 	 * Sleeksnap's API key
@@ -51,11 +73,6 @@ public class PastebinUploader extends Uploader<TextUpload> {
 	 * The URL of the API page
 	 */
 	private static final String API_URL = "http://pastebin.com/api/api_post.php";
-	
-	/**
-	 * The URL of the API Auth page
-	 */
-	private static final String API_AUTH_URL = "http://pastebin.com/api/api_login.php";
 
 	@Override
 	public String getName() {
@@ -63,26 +80,25 @@ public class PastebinUploader extends Uploader<TextUpload> {
 	}
 
 	@Override
-	public String upload(TextUpload contents) throws Exception {
-		RequestData data = new RequestData();
-		
-		data.put("api_dev_key", API_KEY)
-			.put("api_option", API_OPTION_PASTE)
-			.put("api_paste_code", contents.getText());
-		
+	public String upload(final TextUpload contents) throws Exception {
+		final RequestData data = new RequestData();
+
+		data.put("api_dev_key", API_KEY).put("api_option", API_OPTION_PASTE)
+				.put("api_paste_code", contents.getText());
+
 		// User signed in through API
 		if (settings.has("apikey")) {
 			data.put("api_user_key", settings.getString("apikey"));
 		}
-		
+
 		// Paste exposure is set.
 		if (settings.has("paste_exposure")) {
-			PastebinExposure exp = PastebinExposure.valueOf(settings
+			final PastebinExposure exp = PastebinExposure.valueOf(settings
 					.getString("paste_exposure"));
 			if (exp != null) {
 				if (exp == PastebinExposure.Private
-						&& (!settings.has("apikey") || settings
-								.getString("apikey").equals(""))) {
+						&& (!settings.has("apikey") || settings.getString(
+								"apikey").equals(""))) {
 					throw new UploaderConfigurationException(
 							"Pastebin.com only supports private pastes while logged in!");
 				} else {
@@ -90,74 +106,61 @@ public class PastebinUploader extends Uploader<TextUpload> {
 				}
 			}
 		}
-		
+
 		// Expiration, this'll probably be set.
 		if (settings.has("expiration")) {
 			String exp = settings.getString("expiration", "N");
-			
-			if(exp.indexOf(' ') != -1) {
-				exp = exp.substring(0, exp.indexOf(' ')) + Character.toUpperCase(exp.charAt(exp.indexOf(' ')+1));
+
+			if (exp.indexOf(' ') != -1) {
+				exp = exp.substring(0, exp.indexOf(' '))
+						+ Character
+								.toUpperCase(exp.charAt(exp.indexOf(' ') + 1));
 			}
-			
+
 			if (!exp.equals("Never")) {
 				data.put("api_paste_expire_date", exp);
 			}
 		}
-		
+
 		// Execute it and let the user know if something is wrong with it.
-		String resp = HttpUtil.executePost(API_URL, data);
-		
+		final String resp = HttpUtil.executePost(API_URL, data);
+
 		if (resp.startsWith("Bad")) {
 			throw new UploadException(resp.substring(resp.indexOf(',') + 2));
 		}
-		
+
 		return resp;
 	}
 
 	@Override
-	public boolean validateSettings(UploaderSettings settings)
+	public boolean validateSettings(final UploaderSettings settings)
 			throws UploaderConfigurationException {
-		if (settings.has("username")
-				&& settings.has("password")) {
-			String username = settings.getString("username"), password = settings
+		if (settings.has("username") && settings.has("password")) {
+			final String username = settings.getString("username"), password = settings
 					.getString("password");
 			if (!username.equals("") && !password.equals("")) {
 				// Validate the username and password, then get us a key.
-				RequestData data = new RequestData();
-				data.put("api_dev_key", API_KEY)
-					.put("api_user_name", username)
-					.put("api_user_password", password);
+				final RequestData data = new RequestData();
+				data.put("api_dev_key", API_KEY).put("api_user_name", username)
+						.put("api_user_password", password);
 				try {
-					String resp = HttpUtil.executePost(API_AUTH_URL, data);
+					final String resp = HttpUtil
+							.executePost(API_AUTH_URL, data);
 					if (resp.startsWith("Bad")) {
 						throw new UploaderConfigurationException(
 								resp.substring(resp.indexOf(',') + 2));
 					} else {
 						settings.set("apikey", resp);
 					}
-				} catch (IOException e) {
+				} catch (final IOException e) {
 					throw new UploaderConfigurationException(
 							"Unable to verify username and password");
 				}
 			}
 		}
-		// We don't need to store the user's password since we get an application key
+		// We don't need to store the user's password since we get an
+		// application key
 		settings.remove("password");
 		return true;
-	}
-
-	/**
-	 * Pastebin exposure settings.
-	 * 
-	 * Documented as: We have 3 valid values available which you can use with
-	 * the 'api_paste_private' parameter: 0 = Public 1 = Unlisted 2 = Private
-	 * (only allowed in combination with api_user_key, as you have to be logged
-	 * into your account to access the paste)
-	 * 
-	 * @author Nikki
-	 * 
-	 */
-	private enum PastebinExposure {
-		Public, Unlisted, Private
 	}
 }

@@ -35,15 +35,15 @@ import org.sleeksnap.uploaders.Uploader;
 public class TinyURLShortener extends Uploader<URLUpload> {
 
 	/**
+	 * The page URL
+	 */
+	private static final String PAGE_URL = "http://tinyurl.com/create.php";
+
+	/**
 	 * The pattern to find the shortened url
 	 */
 	private static final Pattern urlPattern = Pattern
 			.compile("<blockquote><b>(.*?)</b>");
-
-	/**
-	 * The page URL
-	 */
-	private static final String PAGE_URL = "http://tinyurl.com/create.php";
 
 	@Override
 	public String getName() {
@@ -51,14 +51,14 @@ public class TinyURLShortener extends Uploader<URLUpload> {
 	}
 
 	@Override
-	public String upload(URLUpload url) throws Exception {
-		RequestData data = new RequestData();
-		
+	public String upload(final URLUpload url) throws Exception {
+		final RequestData data = new RequestData();
+
 		data.put("url", url.getURL());
-		
-		String contents = HttpUtil.executeGet(PAGE_URL, data);
-		
-		Matcher matcher = urlPattern.matcher(contents);
+
+		final String contents = HttpUtil.executeGet(PAGE_URL, data);
+
+		final Matcher matcher = urlPattern.matcher(contents);
 		if (matcher.find()) {
 			return matcher.group(1);
 		} else {

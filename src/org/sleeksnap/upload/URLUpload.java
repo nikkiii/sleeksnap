@@ -26,46 +26,47 @@ import java.net.URL;
  * While technically not an Upload, it is mostly used for URL Shorteners
  * 
  * @author Nikki
- *
+ * 
  */
 public class URLUpload implements Upload {
-	
+
 	/**
 	 * The URL of this upload
 	 */
 	private URL url;
-	
-	public URLUpload(URL url) {
-		this.url = url;
+
+	public URLUpload(final String url) throws MalformedURLException {
+		this.url = new URL(url);
 	}
 
-	public URLUpload(String url) throws MalformedURLException {
-		this.url = new URL(url);
+	public URLUpload(final URL url) {
+		this.url = url;
 	}
 
 	@Override
 	public InputStream asInputStream() throws IOException {
 		throw new IOException("URLs cannot be transformed into InputStreams!");
 	}
-	
-	/**
-	 * Set the URL
-	 * @param url
-	 * 			The URL to set it to
-	 */
-	public void setURL(URL url) {
-		this.url = url;
-	}
 
 	/**
 	 * Get the URL
-	 * @return
-	 * 		The URL
+	 * 
+	 * @return The URL
 	 */
 	public URL getURL() {
 		return url;
 	}
-	
+
+	/**
+	 * Set the URL
+	 * 
+	 * @param url
+	 *            The URL to set it to
+	 */
+	public void setURL(final URL url) {
+		this.url = url;
+	}
+
 	@Override
 	public String toString() {
 		return url.toString();

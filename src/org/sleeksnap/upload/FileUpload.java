@@ -26,7 +26,7 @@ import java.io.InputStream;
  * An upload which targets a File
  * 
  * @author Nikki
- *
+ * 
  */
 public class FileUpload implements Upload {
 
@@ -34,29 +34,11 @@ public class FileUpload implements Upload {
 	 * The file in this upload
 	 */
 	private File file;
-	
-	public FileUpload(File file) {
+
+	public FileUpload(final File file) {
 		this.file = file;
 	}
-	
-	/**
-	 * Set the upload's file
-	 * @param file
-	 * 			The file to set
-	 */
-	public void setFile(File file) {
-		this.file = file;
-	}
-	
-	/**
-	 * Get the file for the upload
-	 * @return
-	 * 		The file
-	 */
-	public File getFile() {
-		return file;
-	}
-	
+
 	/**
 	 * Get this file as a FileInputStream
 	 */
@@ -64,8 +46,27 @@ public class FileUpload implements Upload {
 	public InputStream asInputStream() {
 		try {
 			return new FileInputStream(file);
-		} catch (FileNotFoundException e) {
+		} catch (final FileNotFoundException e) {
 			return null;
 		}
+	}
+
+	/**
+	 * Get the file for the upload
+	 * 
+	 * @return The file
+	 */
+	public File getFile() {
+		return file;
+	}
+
+	/**
+	 * Set the upload's file
+	 * 
+	 * @param file
+	 *            The file to set
+	 */
+	public void setFile(final File file) {
+		this.file = file;
 	}
 }

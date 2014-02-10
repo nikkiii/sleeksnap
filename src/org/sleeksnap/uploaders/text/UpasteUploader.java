@@ -32,38 +32,47 @@ import org.sleeksnap.util.Utils.FormatUtil;
  * An uploader for the Upaste.me pastebin.
  * 
  * @author Nikki
- *
+ * 
  */
-@Settings(required = {}, optional = { "private_token", "name", "privacy|combobox[Public,Private]", "expiration|combobox[No expiration,5 minutes,15 minutes,30 minutes,1 hour,6 hours,12 hours,1 day,3 days,5 days,10 days,15 days,1 month,3 months,6 months]" })
+@Settings(required = {}, optional = {
+		"private_token",
+		"name",
+		"privacy|combobox[Public,Private]",
+		"expiration|combobox[No expiration,5 minutes,15 minutes,30 minutes,1 hour,6 hours,12 hours,1 day,3 days,5 days,10 days,15 days,1 month,3 months,6 months]" })
 public class UpasteUploader extends Uploader<TextUpload> {
-	
-	private static final String APIURL = "http://upaste.me/api";
-	
+
 	private static final String APIKEY = "91f4d686e87b6ad41755954c4bb1aa96";
 
-	@Override
-	public String upload(TextUpload t) throws Exception {
-		RequestData data = new RequestData();
-		
-		data.put("api_key", settings.getStringBlankDefault("private_token", APIKEY))
-			.put("paste", t.getText())
-			.put("name", settings.getString("name", ""))
-			.put("privacy", settings.getString("privacy", "Public").equals("Private") ? 1 : 0)
-			.put("expire", FormatUtil.formattedTimeToMinutes(settings.getString("expiration", "0")));
-		
-		String res = HttpUtil.executePost(APIURL, data);
-		
-		Map<String, String> m = Util.parseKeyValues(res, ": ", "\n");
-		
-		if(m.get("Status").equals("failure")) {
-			throw new UploadException("Upload failed due to unknown reason.");
-		}
-		
-		return m.get("Link");
-	}
+	private static final String APIURL = "http://upaste.me/api";
 
 	@Override
 	public String getName() {
 		return "uPaste.me";
+	}
+
+	@Override
+	public String upload(final TextUpload t) throws Exception {
+		final RequestData data = new RequestData();
+
+		data.put("api_key",
+				settings.getStringBlankDefault("private_token", APIKEY))
+				.put("paste", t.getText())
+				.put("name", settings.getString("name", ""))
+				.put("privacy",
+						settings.getString("privacy", "Public").equals(
+								"Private") ? 1 : 0)
+				.put("expire",
+						FormatUtil.formattedTimeToMinutes(settings.getString(
+								"expiration", "0")));
+
+		final String res = HttpUtil.executePost(APIURL, data);
+
+		final Map<String, String> m = Util.parseKeyValues(res, ": ", "\n");
+
+		if (m.get("Status").equals("failure")) {
+			throw new UploadException("Upload failed due to unknown reason.");
+		}
+
+		return m.get("Link");
 	}
 }

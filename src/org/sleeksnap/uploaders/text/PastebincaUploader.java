@@ -29,17 +29,18 @@ import org.sleeksnap.uploaders.Uploader;
  * @author Nikki
  * 
  */
-@Settings(required = { }, optional = { "expiration|combobox[Never,5 minutes,10 minutes,15 minutes,30 minutes,45 minutes,1 hour,2 hours,4 hours,8 hours,12 hours,1 day,2 days,3 days,1 week,2 weeks,3 weeks,1 month,2 months,3 months,4 months,5 months,6 months,1 year]" })
+@Settings(required = {}, optional = { "expiration|combobox[Never,5 minutes,10 minutes,15 minutes,30 minutes,45 minutes,1 hour,2 hours,4 hours,8 hours,12 hours,1 day,2 days,3 days,1 week,2 weeks,3 weeks,1 month,2 months,3 months,4 months,5 months,6 months,1 year]" })
 public class PastebincaUploader extends Uploader<TextUpload> {
+	
+
 
 	/**
 	 * Basic variables, such as the API Key and URL
 	 */
+	private static final String PASTEBINCA_KEY = "cjONz2tQBu4kZxDcugEVAdkSELcD77No";
 	private static final String PASTEBINCA_URL = "http://pastebin.ca/";
 	private static final String PASTEBINCA_SCRIPTURL = PASTEBINCA_URL
 			+ "quiet-paste.php";
-	
-	private static final String PASTEBINCA_KEY = "cjONz2tQBu4kZxDcugEVAdkSELcD77No";
 
 	@Override
 	public String getName() {
@@ -47,17 +48,15 @@ public class PastebincaUploader extends Uploader<TextUpload> {
 	}
 
 	@Override
-	public String upload(TextUpload text) throws Exception {		
-		RequestData data = new RequestData();
-		
-		data.put("api", PASTEBINCA_KEY)
-			.put("content", text.getText())
-			.put("s", true)
-			.put("type", "1")
-			.put("expiry", settings.getString("expiration", "Never"))
-			.put("name", "");
-		
-		String resp = HttpUtil.executePost(PASTEBINCA_SCRIPTURL, data);
+	public String upload(final TextUpload text) throws Exception {
+		final RequestData data = new RequestData();
+
+		data.put("api", PASTEBINCA_KEY).put("content", text.getText())
+				.put("s", true).put("type", "1")
+				.put("expiry", settings.getString("expiration", "Never"))
+				.put("name", "");
+
+		final String resp = HttpUtil.executePost(PASTEBINCA_SCRIPTURL, data);
 
 		return PASTEBINCA_URL + resp.substring(resp.indexOf(':') + 1);
 	}

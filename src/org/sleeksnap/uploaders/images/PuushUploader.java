@@ -35,16 +35,16 @@ import org.sleeksnap.util.Utils.DateUtil;
  * An uploader for puush.me
  * 
  * @author Nikki
- *
+ * 
  */
-@Settings(required = { "email", "password|password" }, optional = { })
+@Settings(required = { "email", "password|password" }, optional = {})
 public class PuushUploader extends Uploader<ImageUpload> {
 
 	/**
 	 * The auth page URL
 	 */
 	private static final String API_AUTH_URL = "http://puush.me/api/auth";
-	
+
 	/**
 	 * The upload URL
 	 */
@@ -56,12 +56,13 @@ public class PuushUploader extends Uploader<ImageUpload> {
 	}
 
 	@Override
-	public String upload(ImageUpload image) throws Exception {
+	public String upload(final ImageUpload image) throws Exception {
 		if (!settings.has("apikey")) {
-			throw new UploaderConfigurationException("API Key is not set! Please configure this uploader's settings.");
+			throw new UploaderConfigurationException(
+					"API Key is not set! Please configure this uploader's settings.");
 		}
 
-		MultipartPostMethod post = new MultipartPostMethod(API_UPLOAD_URL);
+		final MultipartPostMethod post = new MultipartPostMethod(API_UPLOAD_URL);
 
 		post.setParameter("k", settings.getString("apikey"));
 
@@ -73,37 +74,41 @@ public class PuushUploader extends Uploader<ImageUpload> {
 
 		post.execute();
 
-		String[] fields = post.getResponse().split(",");
+		final String[] fields = post.getResponse().split(",");
 
 		if (fields.length == 1) {
 			throw new UploadException("Puu.sh returned the wrong data!");
 		}
 		return fields[1];
 	}
-	
+
 	@Override
-	public boolean validateSettings(UploaderSettings properties) throws UploaderConfigurationException {
+	public boolean validateSettings(final UploaderSettings properties)
+			throws UploaderConfigurationException {
 		if (!properties.has("username") || !properties.has("password")) {
-			throw new UploaderConfigurationException("Username or password not set, please reconfigure puush's uploader!");
+			throw new UploaderConfigurationException(
+					"Username or password not set, please reconfigure puush's uploader!");
 		}
 		try {
-			RequestData data = new RequestData();
-			
+			final RequestData data = new RequestData();
+
 			data.put("e", properties.getString("email"));
 			data.put("p", properties.getString("password"));
-			
-			String resp = HttpUtil.executePost(API_AUTH_URL, data).trim();
-			if(resp.startsWith("-1")) {
-				throw new UploaderConfigurationException("Invalid login, please try again.");
+
+			final String resp = HttpUtil.executePost(API_AUTH_URL, data).trim();
+			if (resp.startsWith("-1")) {
+				throw new UploaderConfigurationException(
+						"Invalid login, please try again.");
 			}
-			
-			String[] s = resp.split(",");
-			
-			if(s[1].length() > 0) {
+
+			final String[] s = resp.split(",");
+
+			if (s[1].length() > 0) {
 				properties.set("apikey", s[1]);
 			}
-		} catch (IOException e) {
-			throw new UploaderConfigurationException("Unable to validate auth due to unexpected error");
+		} catch (final IOException e) {
+			throw new UploaderConfigurationException(
+					"Unable to validate auth due to unexpected error");
 		}
 		return true;
 	}

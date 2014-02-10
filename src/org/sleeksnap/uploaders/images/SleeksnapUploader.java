@@ -28,26 +28,29 @@ import org.sleeksnap.util.Utils.ImageUtil;
 /**
  * -- NOTE -- This currently does not work/is disabled due to hosting.
  * 
- * The default uploader for Sleeksnap images
- * Note: This uploader is meant to be used for Sleeksnap images only!
+ * The default uploader for Sleeksnap images Note: This uploader is meant to be
+ * used for Sleeksnap images only!
  * 
  * @author Nikki
- *
+ * 
  */
 public class SleeksnapUploader extends Uploader<ImageUpload> {
 
 	@Override
-	public String upload(ImageUpload image) throws Exception {
-		String resp = HttpUtil.executePost("http://sleeksnap.com/upload", "image="
-				+ URLEncoder.encode(ImageUtil.toBase64(image.getImage()), "UTF-8"));
-		if(!resp.substring(0, 4).equals("http")) {
-			throw new UploadException(resp);
-		}
-		return resp;
+	public String getName() {
+		return "Sleeksnap";
 	}
 
 	@Override
-	public String getName() {
-		return "Sleeksnap";
+	public String upload(final ImageUpload image) throws Exception {
+		final String resp = HttpUtil.executePost(
+				"http://sleeksnap.com/upload",
+				"image="
+						+ URLEncoder.encode(
+								ImageUtil.toBase64(image.getImage()), "UTF-8"));
+		if (!resp.substring(0, 4).equals("http")) {
+			throw new UploadException(resp);
+		}
+		return resp;
 	}
 }

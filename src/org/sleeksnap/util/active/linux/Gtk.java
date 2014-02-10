@@ -35,30 +35,18 @@ import com.sun.jna.ptr.PointerByReference;
 public interface Gtk extends Library {
 
 	/**
-	 * Initialize the GTK instance
-	 * 
-	 * @param argc
-	 *            Argument count
-	 * @param argv
-	 *            Arguments
-	 */
-	void gtk_init(IntByReference argc, PointerByReference argv);
-
-	// The following are gdk methods
-
-	/**
 	 * A rectangle to represent the GdkWindow bounds
 	 * 
 	 * @author Nikki
 	 */
 	public static class GdkRectangle extends Structure {
+		public int height;
+		public int width;
 		public int x;
 		public int y;
-		public int width;
-		public int height;
 
 		public Rectangle toRectangle() {
-			Rectangle out = new Rectangle(x, y, width, height);
+			final Rectangle out = new Rectangle(x, y, width, height);
 			if (out.x < 0) {
 				out.width = out.width + out.x;
 				out.x = 0;
@@ -71,12 +59,7 @@ public interface Gtk extends Library {
 		}
 	}
 
-	/**
-	 * Gets a pointer to the default screen object
-	 * 
-	 * @return The pointer in the JNA NativeLong format
-	 */
-	public NativeLong gdk_screen_get_default();
+	// The following are gdk methods
 
 	/**
 	 * Gets the active window's pointer
@@ -86,6 +69,25 @@ public interface Gtk extends Library {
 	 * @return The pointer in the JNA NativeLong format
 	 */
 	public NativeLong gdk_screen_get_active_window(NativeLong display);
+
+	/**
+	 * Gets a pointer to the default screen object
+	 * 
+	 * @return The pointer in the JNA NativeLong format
+	 */
+	public NativeLong gdk_screen_get_default();
+
+	/**
+	 * Get the gdk window that the cursor is in
+	 * 
+	 * @param winx
+	 *            The window x position
+	 * @param winy
+	 *            The window y position
+	 * @return A pointer to the window
+	 */
+	public NativeLong gdk_window_at_pointer(IntByReference winx,
+			IntByReference winy);
 
 	/**
 	 * Get the frame bounds
@@ -99,19 +101,6 @@ public interface Gtk extends Library {
 			GdkRectangle extents);
 
 	/**
-	 * Get the gdk window that the cursor is in
-	 * 
-	 * @param winx
-	 * 			The window x position
-	 * @param winy
-	 * 			The window y position
-	 * @return
-	 * 			A pointer to the window
-	 */
-	public NativeLong gdk_window_at_pointer(IntByReference winx,
-			IntByReference winy);
-
-	/**
 	 * Get the toplevel window ancestor
 	 * 
 	 * @param window
@@ -119,4 +108,14 @@ public interface Gtk extends Library {
 	 * @return The NativeLong pointer of the top level window
 	 */
 	public NativeLong gdk_window_get_toplevel(NativeLong window);
+
+	/**
+	 * Initialize the GTK instance
+	 * 
+	 * @param argc
+	 *            Argument count
+	 * @param argv
+	 *            Arguments
+	 */
+	void gtk_init(IntByReference argc, PointerByReference argv);
 }

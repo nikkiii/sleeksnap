@@ -28,7 +28,7 @@ public class UploaderConfigurationException extends UploadException {
 
 	private static final long serialVersionUID = 2574424530734464288L;
 
-	public UploaderConfigurationException(String string) {
+	public UploaderConfigurationException(final String string) {
 		super(string);
 	}
 }

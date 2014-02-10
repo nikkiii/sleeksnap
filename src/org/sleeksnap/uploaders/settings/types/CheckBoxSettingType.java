@@ -26,27 +26,28 @@ import org.sleeksnap.uploaders.settings.UploaderSettingType;
  * A basic setting type for Checkboxes
  * 
  * @author Nikki
- *
+ * 
  */
 public class CheckBoxSettingType implements UploaderSettingType {
 
 	@Override
-	public JComponent constructComponent(String defaultValue) {
-		JCheckBox box = new JCheckBox();
-		if(Boolean.parseBoolean(defaultValue)) {
+	public JComponent constructComponent(final String defaultValue) {
+		final JCheckBox box = new JCheckBox();
+		if (Boolean.parseBoolean(defaultValue)) {
 			box.setSelected(true);
 		}
 		return box;
 	}
 
 	@Override
-	public void setValue(JComponent component, Object value) {
-		((JCheckBox) component).setSelected(Boolean.parseBoolean(value.toString()));
+	public Object getValue(final JComponent component) {
+		return ((JCheckBox) component).isSelected();
 	}
 
 	@Override
-	public Object getValue(JComponent component) {
-		return ((JCheckBox) component).isSelected();
+	public void setValue(final JComponent component, final Object value) {
+		((JCheckBox) component).setSelected(Boolean.parseBoolean(value
+				.toString()));
 	}
 
 }

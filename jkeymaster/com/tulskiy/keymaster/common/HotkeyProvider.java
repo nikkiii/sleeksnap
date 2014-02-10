@@ -32,122 +32,131 @@ import com.tulskiy.keymaster.x11.X11Provider;
 /**
  * Main interface to global hotkey providers
  * <p/>
- * Author: Denis Tulskiy
- * Date: 6/12/11
+ * Author: Denis Tulskiy Date: 6/12/11
  */
 public abstract class HotkeyProvider {
-    public static final Logger logger = Logger.getLogger(HotkeyProvider.class.getName());
+	private class HotKeyEvent implements Runnable {
+		private final HotKey hotKey;
 
-    private boolean useSwingEventQueue;
+		private HotKeyEvent(final HotKey hotKey) {
+			this.hotKey = hotKey;
+		}
 
-    /**
-     * Get global hotkey provider for current platform
-     *
-     * @param useSwingEventQueue whether the provider should be using Swing Event queue or a regular thread
-     * @return new instance of Provider, or null if platform is not supported
-     * @see X11Provider
-     * @see WindowsProvider
-     * @see CarbonProvider
-     */
-    public static HotkeyProvider getCurrentProvider(boolean useSwingEventQueue) {
-        HotkeyProvider provider;
-        if (Platform.isX11()) {
-            provider = new X11Provider();
-        } else if (Platform.isWindows()) {
-            provider = new WindowsProvider();
-        } else if (Platform.isMac()) {
-            provider = new CarbonProvider();
-        } else {
-            logger.warning("No suitable provider for " + System.getProperty("os.name"));
-            return null;
-        }
-        provider.setUseSwingEventQueue(useSwingEventQueue);
-        provider.init();
-        return provider;
+		@Override
+		public void run() {
+			hotKey.getListener().onHotKey(hotKey);
+		}
+	}
 
-    }
+	public static final Logger logger = Logger.getLogger(HotkeyProvider.class
+			.getName());
 
-    private ExecutorService eventQueue;
+	/**
+	 * Get global hotkey provider for current platform
+	 * 
+	 * @param useSwingEventQueue
+	 *            whether the provider should be using Swing Event queue or a
+	 *            regular thread
+	 * @return new instance of Provider, or null if platform is not supported
+	 * @see X11Provider
+	 * @see WindowsProvider
+	 * @see CarbonProvider
+	 */
+	public static HotkeyProvider getCurrentProvider(
+			final boolean useSwingEventQueue) {
+		HotkeyProvider provider;
+		if (Platform.isX11()) {
+			provider = new X11Provider();
+		} else if (Platform.isWindows()) {
+			provider = new WindowsProvider();
+		} else if (Platform.isMac()) {
+			provider = new CarbonProvider();
+		} else {
+			logger.warning("No suitable provider for "
+					+ System.getProperty("os.name"));
+			return null;
+		}
+		provider.setUseSwingEventQueue(useSwingEventQueue);
+		provider.init();
+		return provider;
 
+	}
 
-    /**
-     * Initialize provider. Starts main thread that will listen to hotkey events
-     */
-    protected abstract void init();
+	private ExecutorService eventQueue;
 
-    /**
-     * Stop the provider. Stops main thread and frees any resources.
-     * </br>
-     * all hotkeys should be reset before calling this method
-     *
-     * @see HotkeyProvider#reset()
-     */
-    public void stop() {
-        if (eventQueue != null)
-            eventQueue.shutdown();
-    }
+	private boolean useSwingEventQueue;
 
-    /**
-     * Reset all hotkey listeners
-     */
-    public abstract void reset();
+	/**
+	 * Helper method fro providers to fire hotkey event in a separate thread
+	 * 
+	 * @param hotKey
+	 *            hotkey to fire
+	 */
+	protected void fireEvent(final HotKey hotKey) {
+		final HotKeyEvent event = new HotKeyEvent(hotKey);
+		if (useSwingEventQueue) {
+			SwingUtilities.invokeLater(event);
+		} else {
+			if (eventQueue == null) {
+				eventQueue = Executors.newSingleThreadExecutor();
+			}
+			eventQueue.execute(event);
+		}
+	}
 
-    /**
-     * Register a global hotkey. Only keyCode and modifiers fields are respected
-     *
-     * @param keyCode  KeyStroke to register
-     * @param listener listener to be notified of hotkey events
-     * @see KeyStroke
-     */
-    public abstract void register(KeyStroke keyCode, HotKeyListener listener);
+	/**
+	 * Initialize provider. Starts main thread that will listen to hotkey events
+	 */
+	protected abstract void init();
 
-    /**
-     * Register a media hotkey. Currently supported media keys are:
-     * <p/>
-     * <ul>
-     * <li>Play/Pause</li>
-     * <li>Stop</li>
-     * <li>Next track</li>
-     * <li>Previous Track</li>
-     * </ul>
-     *
-     * @param mediaKey media key to register
-     * @param listener listener to be notified of hotkey events
-     * @see MediaKey
-     */
-    public abstract void register(MediaKey mediaKey, HotKeyListener listener);
+	/**
+	 * Register a global hotkey. Only keyCode and modifiers fields are respected
+	 * 
+	 * @param keyCode
+	 *            KeyStroke to register
+	 * @param listener
+	 *            listener to be notified of hotkey events
+	 * @see KeyStroke
+	 */
+	public abstract void register(KeyStroke keyCode, HotKeyListener listener);
 
-    /**
-     * Helper method fro providers to fire hotkey event in a separate thread
-     *
-     * @param hotKey hotkey to fire
-     */
-    protected void fireEvent(HotKey hotKey) {
-        HotKeyEvent event = new HotKeyEvent(hotKey);
-        if (useSwingEventQueue) {
-            SwingUtilities.invokeLater(event);
-        } else {
-            if (eventQueue == null) {
-                eventQueue = Executors.newSingleThreadExecutor();
-            }
-            eventQueue.execute(event);
-        }
-    }
+	/**
+	 * Register a media hotkey. Currently supported media keys are:
+	 * <p/>
+	 * <ul>
+	 * <li>Play/Pause</li>
+	 * <li>Stop</li>
+	 * <li>Next track</li>
+	 * <li>Previous Track</li>
+	 * </ul>
+	 * 
+	 * @param mediaKey
+	 *            media key to register
+	 * @param listener
+	 *            listener to be notified of hotkey events
+	 * @see MediaKey
+	 */
+	public abstract void register(MediaKey mediaKey, HotKeyListener listener);
 
-    public void setUseSwingEventQueue(boolean useSwingEventQueue) {
-        this.useSwingEventQueue = useSwingEventQueue;
-    }
+	/**
+	 * Reset all hotkey listeners
+	 */
+	public abstract void reset();
 
-    private class HotKeyEvent implements Runnable {
-        private HotKey hotKey;
+	public void setUseSwingEventQueue(final boolean useSwingEventQueue) {
+		this.useSwingEventQueue = useSwingEventQueue;
+	}
 
-        private HotKeyEvent(HotKey hotKey) {
-            this.hotKey = hotKey;
-        }
-
-        public void run() {
-            hotKey.getListener().onHotKey(hotKey);
-        }
-    }
+	/**
+	 * Stop the provider. Stops main thread and frees any resources. </br> all
+	 * hotkeys should be reset before calling this method
+	 * 
+	 * @see HotkeyProvider#reset()
+	 */
+	public void stop() {
+		if (eventQueue != null) {
+			eventQueue.shutdown();
+		}
+	}
 
 }

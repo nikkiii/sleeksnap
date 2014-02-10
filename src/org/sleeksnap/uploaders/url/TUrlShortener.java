@@ -24,14 +24,14 @@ import org.sleeksnap.uploaders.UploadException;
 import org.sleeksnap.uploaders.Uploader;
 
 /**
- * A url shortener for http://turl.ca
- * http://turl.ca/apidoc.php
+ * A url shortener for http://turl.ca http://turl.ca/apidoc.php
  * 
  * @author Nikki
  * 
  */
 public class TUrlShortener extends Uploader<URLUpload> {
 
+	
 	/**
 	 * The base URL
 	 */
@@ -42,23 +42,25 @@ public class TUrlShortener extends Uploader<URLUpload> {
 	 */
 	private static final String API_URL = TURL_BASE + "api.php";
 
+
 	@Override
 	public String getName() {
 		return "TUrl.ca";
 	}
 
 	@Override
-	public String upload(URLUpload url) throws Exception {
-		RequestData data = new RequestData();
-		
+	public String upload(final URLUpload url) throws Exception {
+		final RequestData data = new RequestData();
+
 		data.put("url", url.getURL());
-		
+
 		// Request the page with the specified data
-		String resp = HttpUtil.executeGet(API_URL, data);
-		
-		//Response is in STATUS:data format, data can be an error message or the shortened url.
-		String status = resp.substring(0, resp.indexOf(':'));
-		String resStr = resp.substring(resp.indexOf(':')+1);
+		final String resp = HttpUtil.executeGet(API_URL, data);
+
+		// Response is in STATUS:data format, data can be an error message or
+		// the shortened url.
+		final String status = resp.substring(0, resp.indexOf(':'));
+		final String resStr = resp.substring(resp.indexOf(':') + 1);
 		if (status.equalsIgnoreCase("ERROR")) {
 			throw new UploadException(resStr);
 		}

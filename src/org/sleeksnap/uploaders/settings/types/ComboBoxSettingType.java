@@ -27,17 +27,17 @@ import org.sleeksnap.uploaders.settings.UploaderSettingType;
  * A basic setting type for JComboBoxes
  * 
  * @author Nikki
- *
+ * 
  */
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class ComboBoxSettingType implements UploaderSettingType {
 
 	@Override
-	public JComponent constructComponent(String defaultValue) {
-		JComboBox box = new JComboBox();
-		if(!defaultValue.equals("")) {
-			String[] split = defaultValue.split(",");
-			for(int i = 0; i < split.length; i++) {
+	public JComponent constructComponent(final String defaultValue) {
+		final JComboBox box = new JComboBox();
+		if (!defaultValue.equals("")) {
+			final String[] split = defaultValue.split(",");
+			for (int i = 0; i < split.length; i++) {
 				split[i] = split[i].trim();
 			}
 			box.setModel(new DefaultComboBoxModel(split));
@@ -46,13 +46,13 @@ public class ComboBoxSettingType implements UploaderSettingType {
 	}
 
 	@Override
-	public void setValue(JComponent component, Object value) {
-		((JComboBox) component).setSelectedItem(value);
+	public Object getValue(final JComponent component) {
+		return ((JComboBox) component).getSelectedItem();
 	}
 
 	@Override
-	public Object getValue(JComponent component) {
-		return ((JComboBox) component).getSelectedItem();
+	public void setValue(final JComponent component, final Object value) {
+		((JComboBox) component).setSelectedItem(value);
 	}
 
 }

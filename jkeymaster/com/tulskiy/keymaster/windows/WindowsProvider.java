@@ -37,112 +37,117 @@ import com.tulskiy.keymaster.common.MediaKey;
 import com.tulskiy.keymaster.windows.User32.MSG;
 
 /**
- * Author: Denis Tulskiy
- * Date: 6/12/11
+ * Author: Denis Tulskiy Date: 6/12/11
  */
 public class WindowsProvider extends HotkeyProvider {
-    private static volatile int idSeq = 0;
+	private static volatile int idSeq = 0;
 
-    private boolean listen;
-    private Boolean reset = false;
-    private final Object lock = new Object();
-    private Thread thread;
+	private final Map<Integer, HotKey> hotKeys = new HashMap<Integer, HotKey>();
+	private boolean listen;
+	private final Object lock = new Object();
+	private final Queue<HotKey> registerQueue = new LinkedList<HotKey>();
 
-    private Map<Integer, HotKey> hotKeys = new HashMap<Integer, HotKey>();
-    private Queue<HotKey> registerQueue = new LinkedList<HotKey>();
+	private Boolean reset = false;
+	private Thread thread;
 
-    public void init() {
-        Runnable runnable = new Runnable() {
-            public void run() {
-                logger.info("Starting Windows global hotkey provider");
-                MSG msg = new MSG();
-                listen = true;
-                while (listen) {
-                    while (PeekMessage(msg, null, 0, 0, PM_REMOVE)) {
-                        if (msg.message == WM_HOTKEY) {
-                            int id = msg.wParam.intValue();
-                            HotKey hotKey = hotKeys.get(id);
+	@Override
+	public void init() {
+		final Runnable runnable = new Runnable() {
+			@Override
+			public void run() {
+				logger.info("Starting Windows global hotkey provider");
+				final MSG msg = new MSG();
+				listen = true;
+				while (listen) {
+					while (PeekMessage(msg, null, 0, 0, PM_REMOVE)) {
+						if (msg.message == WM_HOTKEY) {
+							final int id = msg.wParam.intValue();
+							final HotKey hotKey = hotKeys.get(id);
 
-                            if (hotKey != null) {
-                                fireEvent(hotKey);
-                            }
-                        }
-                    }
+							if (hotKey != null) {
+								fireEvent(hotKey);
+							}
+						}
+					}
 
-                    synchronized (lock) {
-                        if (reset) {
-                            logger.info("Reset hotkeys");
-                            for (Integer id : hotKeys.keySet()) {
-                                UnregisterHotKey(null, id);
-                            }
+					synchronized (lock) {
+						if (reset) {
+							logger.info("Reset hotkeys");
+							for (final Integer id : hotKeys.keySet()) {
+								UnregisterHotKey(null, id);
+							}
 
-                            hotKeys.clear();
-                            reset = false;
-                            lock.notify();
-                        }
+							hotKeys.clear();
+							reset = false;
+							lock.notify();
+						}
 
-                        while (!registerQueue.isEmpty()) {
-                            register(registerQueue.poll());
-                        }
-                        try {
-                            lock.wait(300);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-                logger.info("Exit listening thread");
-            }
-        };
+						while (!registerQueue.isEmpty()) {
+							register(registerQueue.poll());
+						}
+						try {
+							lock.wait(300);
+						} catch (final InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+				logger.info("Exit listening thread");
+			}
+		};
 
-        thread = new Thread(runnable);
-        thread.start();
-    }
+		thread = new Thread(runnable);
+		thread.start();
+	}
 
-    private void register(HotKey hotKey) {
-        int id = idSeq++;
-        int code = KeyMap.getCode(hotKey);
-        if (RegisterHotKey(null, id, KeyMap.getModifiers(hotKey.getKeyStroke()), code)) {
-            logger.info("Registering hotkey: " + hotKey);
-            hotKeys.put(id, hotKey);
-        } else {
-            logger.warning("Could not register hotkey: " + hotKey);
-        }
-    }
+	private void register(final HotKey hotKey) {
+		final int id = idSeq++;
+		final int code = KeyMap.getCode(hotKey);
+		if (RegisterHotKey(null, id,
+				KeyMap.getModifiers(hotKey.getKeyStroke()), code)) {
+			logger.info("Registering hotkey: " + hotKey);
+			hotKeys.put(id, hotKey);
+		} else {
+			logger.warning("Could not register hotkey: " + hotKey);
+		}
+	}
 
-    public void register(KeyStroke keyCode, HotKeyListener listener) {
-        synchronized (lock) {
-            registerQueue.add(new HotKey(keyCode, listener));
-        }
-    }
+	@Override
+	public void register(final KeyStroke keyCode, final HotKeyListener listener) {
+		synchronized (lock) {
+			registerQueue.add(new HotKey(keyCode, listener));
+		}
+	}
 
-    public void register(MediaKey mediaKey, HotKeyListener listener) {
-        synchronized (lock) {
-            registerQueue.add(new HotKey(mediaKey, listener));
-        }
-    }
+	@Override
+	public void register(final MediaKey mediaKey, final HotKeyListener listener) {
+		synchronized (lock) {
+			registerQueue.add(new HotKey(mediaKey, listener));
+		}
+	}
 
-    public void reset() {
-        synchronized (lock) {
-            reset = true;
-            try {
-                lock.wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+	@Override
+	public void reset() {
+		synchronized (lock) {
+			reset = true;
+			try {
+				lock.wait();
+			} catch (final InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 
-    @Override
-    public void stop() {
-        listen = false;
-        if (thread != null) {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        super.stop();
-    }
+	@Override
+	public void stop() {
+		listen = false;
+		if (thread != null) {
+			try {
+				thread.join();
+			} catch (final InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		super.stop();
+	}
 }

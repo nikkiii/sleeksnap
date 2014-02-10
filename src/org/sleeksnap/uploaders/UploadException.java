@@ -21,12 +21,17 @@ package org.sleeksnap.uploaders;
  * An exception thrown when something goes wrong during an upload
  * 
  * @author Nikki
- *
+ * 
  */
 @SuppressWarnings("serial")
 public class UploadException extends Exception {
 
-	public UploadException(String string) {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -2363267971543131012L;
+
+	public UploadException(final String string) {
 		super(string);
 	}
 }

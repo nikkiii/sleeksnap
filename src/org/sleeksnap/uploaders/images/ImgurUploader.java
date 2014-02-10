@@ -49,10 +49,11 @@ public class ImgurUploader extends Uploader<ImageUpload> {
 	public static final String CLIENT_SECRET = "e4027881760afb6bb0e5da5e224827963089c727";
 
 	static {
-		ParametersDialog.registerSettingType("imguroauth", new ImgurOAuthSettingType());
+		ParametersDialog.registerSettingType("imguroauth",
+				new ImgurOAuthSettingType());
 	}
 
-	private ImgurAuthentication auth = new ImgurAuthentication(this);
+	private final ImgurAuthentication auth = new ImgurAuthentication(this);
 
 	@Override
 	public String getName() {
@@ -60,16 +61,17 @@ public class ImgurUploader extends Uploader<ImageUpload> {
 	}
 
 	@Override
-	public String upload(ImageUpload image) throws Exception {
+	public String upload(final ImageUpload image) throws Exception {
 		// The API URL
-		URL url = new URL("https://api.imgur.com/3/image.json");
+		final URL url = new URL("https://api.imgur.com/3/image.json");
 
 		// Encode the image using our utility class
-		RequestData req = new RequestData();
+		final RequestData req = new RequestData();
 		req.put("image", ImageUtil.toBase64(image.getImage()));
 
 		// Open a connection to the API and add our Client ID
-		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+		final HttpURLConnection connection = (HttpURLConnection) url
+				.openConnection();
 		connection.setRequestMethod("POST");
 		auth.addToConnection(connection);
 		connection.setDoOutput(true);
@@ -78,34 +80,37 @@ public class ImgurUploader extends Uploader<ImageUpload> {
 			/**
 			 * Write the image data and api key
 			 */
-			OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
+			final OutputStreamWriter writer = new OutputStreamWriter(
+					connection.getOutputStream());
 			writer.write(req.toURLEncodedString());
 			writer.flush();
 			writer.close();
-	
-			String res = StreamUtils.readContents(connection.getInputStream());
-			
+
+			final String res = StreamUtils.readContents(connection
+					.getInputStream());
+
 			if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
 				try {
-	
+
 					/**
 					 * Parse the URL from the response
 					 */
-					JSONObject object = new JSONObject(res);
-	
-					JSONObject data = object.getJSONObject("data");
-	
+					final JSONObject object = new JSONObject(res);
+
+					final JSONObject data = object.getJSONObject("data");
+
 					if (!object.getBoolean("success")) {
-						JSONObject error = data.getJSONObject("error");
+						final JSONObject error = data.getJSONObject("error");
 						throw new UploadException(error.getString("message"));
 					}
-	
+
 					return data.getString("link");
-				} catch (JSONException e) {
+				} catch (final JSONException e) {
 					throw new UploadException("Malformed JSON Response");
 				}
 			} else {
-				throw new UploadException("Imgur API returned HTTP Response " + connection.getResponseCode());
+				throw new UploadException("Imgur API returned HTTP Response "
+						+ connection.getResponseCode());
 			}
 		} finally {
 			connection.disconnect();

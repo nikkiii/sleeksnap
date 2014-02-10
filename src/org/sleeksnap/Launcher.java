@@ -30,89 +30,97 @@ import com.sanityinc.jargs.CmdLineParser.Option;
 import com.sanityinc.jargs.CmdLineParser.OptionException;
 
 /**
- * A simple launcher which will re-launch Sleeksnap with the specified memory (Default is 128MB)
+ * A simple launcher which will re-launch Sleeksnap with the specified memory
+ * (Default is 128MB)
+ * 
  * @author Nikki
- *
+ * 
  */
 public class Launcher {
-	
-	public static void main(String[] args) {
-		CmdLineParser parser = new CmdLineParser();
-		
-		Option<Integer> memory = parser.addIntegerOption('m', "memory");
-		
-		try {
-			parser.parse(args);
-		} catch (OptionException e1) {
-			e1.printStackTrace();
-		}
-		
-		try {
-			File jar = FileUtils.getJarFile(Launcher.class);
 
-			launch(jar, "org.sleeksnap.ScreenSnapper", new String[] { "-Xmx" + memory.getOptionValue(parser, 128) + "m" }, parser.getRemainingArgs());
-			
-			System.exit(0);
-		} catch (Exception e) {
-			ScreenSnapper.main(args);
-		}
-	}
-	
 	/**
 	 * Launch a class from the jar file
 	 * 
 	 * @param jarFile
-	 * 			The jar file to launch from
+	 *            The jar file to launch from
 	 * @param className
-	 * 			The class in the jar file to call
+	 *            The class in the jar file to call
 	 * @throws Exception
-	 * 			If an error occurs
+	 *             If an error occurs
 	 */
-	public static void launch(File jarFile, String className) throws Exception {
+	public static void launch(final File jarFile, final String className)
+			throws Exception {
 		launch(jarFile, className, null, null);
 	}
-	
+
 	/**
 	 * Launch a class from a jar file with java and normal arguments
 	 * 
 	 * @param jarFile
-	 * 			The jar file to launch from
+	 *            The jar file to launch from
 	 * @param className
-	 * 			The class to  launch
+	 *            The class to launch
 	 * @param javaArgs
-	 * 			The java arguments (Added BEFORE -classpath)
+	 *            The java arguments (Added BEFORE -classpath)
 	 * @param args
-	 * 			The program arguments
+	 *            The program arguments
 	 * @throws Exception
-	 * 			If an error occurs and is unable to launch
+	 *             If an error occurs and is unable to launch
 	 */
-	public static void launch(File jarFile, String className, String[] javaArgs, String[] args) throws Exception {
-		ArrayList<String> params = new ArrayList<String>();
-		
-		File exe = FileUtils.getJavaExecutable();
-		
-		if(exe == null) {
+	public static void launch(final File jarFile, final String className,
+			final String[] javaArgs, final String[] args) throws Exception {
+		final ArrayList<String> params = new ArrayList<String>();
+
+		final File exe = FileUtils.getJavaExecutable();
+
+		if (exe == null) {
 			throw new Exception("Unable to find java executable!");
 		}
 
 		params.add(exe.getPath());
-		
-		if(javaArgs != null)
+
+		if (javaArgs != null) {
 			params.addAll(Arrays.asList(javaArgs));
-		
-		if(Util.getPlatform() == OperatingSystem.MAC) {
+		}
+
+		if (Util.getPlatform() == OperatingSystem.MAC) {
 			params.add("-Dapple.awt.UIElement=true");
 		}
-		
+
 		params.add("-classpath");
 		params.add(jarFile.getAbsolutePath());
 		params.add(className);
-		
-		if(args != null)
+
+		if (args != null) {
 			params.addAll(Arrays.asList(args));
-		
-		String[] cmd = params.toArray(new String[params.size()]);
-		
+		}
+
+		final String[] cmd = params.toArray(new String[params.size()]);
+
 		Runtime.getRuntime().exec(cmd);
+	}
+
+	public static void main(final String[] args) {
+		final CmdLineParser parser = new CmdLineParser();
+
+		final Option<Integer> memory = parser.addIntegerOption('m', "memory");
+
+		try {
+			parser.parse(args);
+		} catch (final OptionException e1) {
+			e1.printStackTrace();
+		}
+
+		try {
+			final File jar = FileUtils.getJarFile(Launcher.class);
+
+			launch(jar, "org.sleeksnap.ScreenSnapper", new String[] { "-Xmx"
+					+ memory.getOptionValue(parser, 128) + "m" },
+					parser.getRemainingArgs());
+
+			System.exit(0);
+		} catch (final Exception e) {
+			ScreenSnapper.main(args);
+		}
 	}
 }

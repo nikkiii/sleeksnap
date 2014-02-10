@@ -39,9 +39,9 @@ public class HistoryEntry {
 			"E, MMM d yyyy hh:mm:ss a");
 
 	/**
-	 * The uploaded file URL
+	 * The date/time uploaded
 	 */
-	private String url;
+	private Date date;
 
 	/**
 	 * The name of the uploader used
@@ -49,15 +49,26 @@ public class HistoryEntry {
 	private String uploader;
 
 	/**
-	 * The date/time uploaded
+	 * The uploaded file URL
 	 */
-	private Date date;
+	private String url;
 
 	/**
 	 * A blank constructor... used for serialization beans
 	 */
 	public HistoryEntry() {
 
+	}
+
+	/**
+	 * Constructs a new HistoryEntry object from the specified JSON Object
+	 * 
+	 * @param object
+	 *            The JSON Object to read from
+	 */
+	public HistoryEntry(final JSONObject object) {
+		this(object.getString("url"), object.getString("uploader"), new Date(
+				object.getLong("date")));
 	}
 
 	/**
@@ -69,7 +80,7 @@ public class HistoryEntry {
 	 * @param uploader
 	 *            The uploader name
 	 */
-	public HistoryEntry(String url, String uploader) {
+	public HistoryEntry(final String url, final String uploader) {
 		this(url, uploader, new Date());
 	}
 
@@ -84,20 +95,10 @@ public class HistoryEntry {
 	 * @param date
 	 *            The date that the entry was made
 	 */
-	public HistoryEntry(String url, String uploader, Date date) {
+	public HistoryEntry(final String url, final String uploader, final Date date) {
 		this.url = url;
 		this.uploader = uploader;
 		this.date = date;
-	}
-
-	/**
-	 * Constructs a new HistoryEntry object from the specified JSON Object
-	 * 
-	 * @param object
-	 * 			The JSON Object to read from
-	 */
-	public HistoryEntry(JSONObject object) {
-		this(object.getString("url"), object.getString("uploader"), new Date(object.getLong("date")));
 	}
 
 	/**
@@ -133,7 +134,7 @@ public class HistoryEntry {
 	 * @param date
 	 *            The date object to set it to
 	 */
-	public void setDate(Date date) {
+	public void setDate(final Date date) {
 		this.date = date;
 	}
 
@@ -143,7 +144,7 @@ public class HistoryEntry {
 	 * @param uploader
 	 *            The uploader name
 	 */
-	public void setUploader(String uploader) {
+	public void setUploader(final String uploader) {
 		this.uploader = uploader;
 	}
 
@@ -153,26 +154,26 @@ public class HistoryEntry {
 	 * @param url
 	 *            The URL
 	 */
-	public void setUrl(String url) {
+	public void setUrl(final String url) {
 		this.url = url;
+	}
+
+	/**
+	 * Export this history entry into a JSON Object
+	 * 
+	 * @return The JSON object containing this entry's data
+	 * @throws JSONException
+	 */
+	public JSONObject toJSONObject() {
+		final JSONObject object = new JSONObject();
+		object.put("url", url);
+		object.put("uploader", uploader);
+		object.put("date", date.getTime());
+		return object;
 	}
 
 	@Override
 	public String toString() {
 		return format.format(date) + " - " + url;
-	}
-
-	/**
-	 * Export this history entry into a JSON Object
-	 * @return
-	 * 			The JSON object containing this entry's data
-	 * @throws JSONException
-	 */
-	public JSONObject toJSONObject() {
-		JSONObject object = new JSONObject();
-		object.put("url", url);
-		object.put("uploader", uploader);
-		object.put("date", date.getTime());
-		return object;
 	}
 }

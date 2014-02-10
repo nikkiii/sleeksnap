@@ -42,9 +42,82 @@ import java.util.Random;
 public class MultipartPostMethod {
 
 	/**
-	 * The URL of this method
+	 * A simple wrapper to simulate a File, except we can push a name and the
+	 * data from memory
+	 * 
+	 * @author Nikki
+	 * 
 	 */
-	private URL url;
+	public static class MultipartFile {
+		/**
+		 * Create a FileUpload from an existing file
+		 * 
+		 * @param file
+		 *            The file
+		 * @return The wrapper with file name/input stream
+		 * @throws IOException
+		 *             If a problem occured while opening the file
+		 */
+		public static MultipartFile create(final File file) throws IOException {
+			return new MultipartFile(file.getName(), new FileInputStream(file));
+		}
+
+		/**
+		 * The upload filename
+		 */
+		private final String name;
+
+		/**
+		 * The upload data
+		 */
+		private final InputStream stream;
+
+		/**
+		 * Construct a new "File Upload" instance
+		 * 
+		 * @param name
+		 *            The name
+		 * @param stream
+		 *            The input stream which contains the data
+		 */
+		public MultipartFile(final String name, final InputStream stream) {
+			this.name = name;
+			this.stream = stream;
+		}
+
+		/**
+		 * Get the file name
+		 * 
+		 * @return The name
+		 */
+		public String getName() {
+			return name;
+		}
+
+		/**
+		 * Get the file data
+		 * 
+		 * @return An input stream which contains the data
+		 */
+		public InputStream getStream() {
+			return stream;
+		}
+	}
+
+	/**
+	 * The random number generator
+	 */
+	private static Random random = new Random();
+
+	/**
+	 * Generate a random string
+	 * 
+	 * @return A (semi-random) string built from a random long... this can be
+	 *         redone a lot better, but it's simple enough and works for now.
+	 */
+	protected static String randomString() {
+		return Long.toString(random.nextLong(), 36);
+	}
 
 	/**
 	 * The connection, valid only after execute()
@@ -54,7 +127,12 @@ public class MultipartPostMethod {
 	/**
 	 * The Parameters, can use File or any other type which supports toString()
 	 */
-	private Map<String, Object> parameters = new HashMap<String, Object>();
+	private final Map<String, Object> parameters = new HashMap<String, Object>();
+
+	/**
+	 * The URL of this method
+	 */
+	private final URL url;
 
 	/**
 	 * Construct a new instance
@@ -62,7 +140,7 @@ public class MultipartPostMethod {
 	 * @param url
 	 *            The URL
 	 */
-	public MultipartPostMethod(String url) throws IOException {
+	public MultipartPostMethod(final String url) throws IOException {
 		this.url = new URL(url);
 	}
 
@@ -72,20 +150,15 @@ public class MultipartPostMethod {
 	 * @param url
 	 *            The URL
 	 */
-	public MultipartPostMethod(URL url) {
+	public MultipartPostMethod(final URL url) {
 		this.url = url;
 	}
 
 	/**
-	 * Set a parameter
-	 * 
-	 * @param key
-	 *            The key
-	 * @param value
-	 *            The value
+	 * Close this connection
 	 */
-	public void setParameter(String key, Object value) {
-		parameters.put(key, value);
+	public void close() {
+		connection.disconnect();
 	}
 
 	/**
@@ -106,22 +179,28 @@ public class MultipartPostMethod {
 		// Let the connection output data
 		connection.setDoOutput(true);
 		// Get the output stream and open a writer to it
-		OutputStream os = connection.getOutputStream();
-		OutputStreamWriter writer = new OutputStreamWriter(os);
+		final OutputStream os = connection.getOutputStream();
+		final OutputStreamWriter writer = new OutputStreamWriter(os);
 		// Loop through the parameters
-		for (Entry<String, Object> entry : parameters.entrySet()) {
+		for (final Entry<String, Object> entry : parameters.entrySet()) {
 			// Write the boundary (separator)
 			writer.write(boundary + "\r\n");
 			// Write the content name
 			writer.write("Content-Disposition: form-data; name=\""
 					+ entry.getKey() + "\"");
 			// Get the content value
-			Object object = entry.getValue();
-			if (object instanceof MultipartFile || object instanceof File) { // If it is an upload (We
-												// simulate this if we have an
-												// input/file name), use this to
-												// write it
-				MultipartFile file = object instanceof File ? MultipartFile.create((File) object) : (MultipartFile) object;
+			final Object object = entry.getValue();
+			if (object instanceof MultipartFile || object instanceof File) { // If
+																				// it
+																				// is
+																				// an
+																				// upload
+																				// (We
+				// simulate this if we have an
+				// input/file name), use this to
+				// write it
+				final MultipartFile file = object instanceof File ? MultipartFile
+						.create((File) object) : (MultipartFile) object;
 				// Write the file name with the content name
 				writer.write("; filename=\"" + file.getName() + "\"");
 				writer.write("\r\n");
@@ -138,11 +217,11 @@ public class MultipartPostMethod {
 				// stream
 				writer.flush();
 				// Open the stream and copy the data into the output
-				InputStream input = file.getStream();
+				final InputStream input = file.getStream();
 				try {
-					byte[] buffer = new byte[1024];
+					final byte[] buffer = new byte[1024];
 					while (true) {
-						int read = input.read(buffer, 0, buffer.length);
+						final int read = input.read(buffer, 0, buffer.length);
 						if (read == -1) {
 							break;
 						}
@@ -175,26 +254,9 @@ public class MultipartPostMethod {
 		writer.close();
 	}
 
-	/**
-	 * Read the response
-	 * 
-	 * @return The response
-	 * @throws IOException
-	 *             If an error occurs while opening the page
-	 */
-	public String getResponse() throws IOException {
-		StringBuilder contents = new StringBuilder();
-		BufferedReader reader = new BufferedReader(new InputStreamReader(
-				connection.getInputStream()));
-		try {
-			String line;
-			while ((line = reader.readLine()) != null) {
-				contents.append(line).append("\n");
-			}
-		} finally {
-			reader.close();
-		}
-		return contents.toString();
+	@Override
+	public void finalize() {
+		close();
 	}
 
 	/**
@@ -209,91 +271,36 @@ public class MultipartPostMethod {
 	}
 
 	/**
-	 * Close this connection
-	 */
-	public void close() {
-		connection.disconnect();
-	}
-
-	@Override
-	public void finalize() {
-		close();
-	}
-
-	/**
-	 * The random number generator
-	 */
-	private static Random random = new Random();
-
-	/**
-	 * Generate a random string
+	 * Read the response
 	 * 
-	 * @return	A (semi-random) string built from a random long... this can be redone a lot better, but it's simple enough and works for now.
+	 * @return The response
+	 * @throws IOException
+	 *             If an error occurs while opening the page
 	 */
-	protected static String randomString() {
-		return Long.toString(random.nextLong(), 36);
+	public String getResponse() throws IOException {
+		final StringBuilder contents = new StringBuilder();
+		final BufferedReader reader = new BufferedReader(new InputStreamReader(
+				connection.getInputStream()));
+		try {
+			String line;
+			while ((line = reader.readLine()) != null) {
+				contents.append(line).append("\n");
+			}
+		} finally {
+			reader.close();
+		}
+		return contents.toString();
 	}
 
 	/**
-	 * A simple wrapper to simulate a File, except we can push a name and the
-	 * data from memory
+	 * Set a parameter
 	 * 
-	 * @author Nikki
-	 * 
+	 * @param key
+	 *            The key
+	 * @param value
+	 *            The value
 	 */
-	public static class MultipartFile {
-		/**
-		 * The upload filename
-		 */
-		private String name;
-
-		/**
-		 * The upload data
-		 */
-		private InputStream stream;
-
-		/**
-		 * Construct a new "File Upload" instance
-		 * 
-		 * @param name
-		 *            The name
-		 * @param stream
-		 *            The input stream which contains the data
-		 */
-		public MultipartFile(String name, InputStream stream) {
-			this.name = name;
-			this.stream = stream;
-		}
-
-		/**
-		 * Get the file name
-		 * 
-		 * @return The name
-		 */
-		public String getName() {
-			return name;
-		}
-
-		/**
-		 * Get the file data
-		 * 
-		 * @return An input stream which contains the data
-		 */
-		public InputStream getStream() {
-			return stream;
-		}
-
-		/**
-		 * Create a FileUpload from an existing file
-		 * 
-		 * @param file
-		 *            The file
-		 * @return The wrapper with file name/input stream
-		 * @throws IOException
-		 *             If a problem occured while opening the file
-		 */
-		public static MultipartFile create(File file) throws IOException {
-			return new MultipartFile(file.getName(), new FileInputStream(file));
-		}
+	public void setParameter(final String key, final Object value) {
+		parameters.put(key, value);
 	}
 }

@@ -53,13 +53,15 @@ public class SelectionWindow extends JWindow {
 	 * 
 	 */
 	private class ScreenSelectionListener extends MouseInputAdapter {
-		public void mouseDragged(MouseEvent e) {
+		@Override
+		public void mouseDragged(final MouseEvent e) {
 			updateSize(e);
 		}
 
-		public void mousePressed(MouseEvent e) {
-			int x = e.getX();
-			int y = e.getY();
+		@Override
+		public void mousePressed(final MouseEvent e) {
+			final int x = e.getX();
+			final int y = e.getY();
 			if (e.getButton() == MouseEvent.BUTTON3) {
 				e.consume();
 				close();
@@ -70,7 +72,8 @@ public class SelectionWindow extends JWindow {
 			repaint();
 		}
 
-		public void mouseReleased(MouseEvent e) {
+		@Override
+		public void mouseReleased(final MouseEvent e) {
 			// Cancel button
 			if (e.getButton() == MouseEvent.BUTTON3) {
 				e.consume();
@@ -80,7 +83,7 @@ public class SelectionWindow extends JWindow {
 			updateSize(e);
 			try {
 				capture();
-			} catch (Exception ex) {
+			} catch (final Exception ex) {
 				ex.printStackTrace();
 			}
 		}
@@ -93,7 +96,7 @@ public class SelectionWindow extends JWindow {
 		 * For efficiency (though that isn't an issue for this program), specify
 		 * the painting region using arguments to the repaint() call.
 		 */
-		void updateSize(MouseEvent e) {
+		void updateSize(final MouseEvent e) {
 			currentRect.setSize(e.getX() - currentRect.x, e.getY()
 					- currentRect.y);
 			updateDrawableRect(getWidth(), getHeight());
@@ -101,25 +104,32 @@ public class SelectionWindow extends JWindow {
 		}
 	}
 
-	private Graphics g;
-	private BufferedImage image;
-	private Rectangle area;
+	private static Color rectColor = new Color(0, 0, 0, 50);
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -1382471407938993639L;
+	private final Rectangle area;
+	private Image buffer;
 	private Rectangle currentRect;
+	private Graphics g;
+
+	private final BufferedImage image;
+
 	private Rectangle rectToDraw = null;
 
-	private ScreenSnapper snapper;
+	private final ScreenSnapper snapper;
 
-	private Image buffer;
-
-	public SelectionWindow(ScreenSnapper snapper, Rectangle area) {
+	public SelectionWindow(final ScreenSnapper snapper, final Rectangle area) {
 		this.snapper = snapper;
 		this.area = area;
-		this.image = ScreenshotUtil.capture(area);
-		this.setPreferredSize(new Dimension(area.width, area.height));
-		this.setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
+		image = ScreenshotUtil.capture(area);
+		setPreferredSize(new Dimension(area.width, area.height));
+		setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
 		this.setBounds(area);
 
-		ScreenSelectionListener listener = new ScreenSelectionListener();
+		final ScreenSelectionListener listener = new ScreenSelectionListener();
 		addMouseListener(listener);
 		addMouseMotionListener(listener);
 	}
@@ -141,8 +151,6 @@ public class SelectionWindow extends JWindow {
 		dispose();
 		snapper.clearWindow();
 	}
-	
-	private static Color rectColor = new Color(0, 0, 0, 50);
 
 	public void paint() {
 		g.clearRect(area.x, area.y, area.width, area.height);
@@ -158,10 +166,10 @@ public class SelectionWindow extends JWindow {
 	}
 
 	@Override
-	public void paint(Graphics gr) {
+	public void paint(final Graphics gr) {
 		if (buffer == null) {
-			this.buffer = createImage(area.width, area.height);
-			this.g = buffer.getGraphics();
+			buffer = createImage(area.width, area.height);
+			g = buffer.getGraphics();
 		}
 		// paint to the buffer
 		paint();
@@ -169,7 +177,7 @@ public class SelectionWindow extends JWindow {
 		gr.drawImage(buffer, 0, 0, this);
 	}
 
-	private void updateDrawableRect(int compWidth, int compHeight) {
+	private void updateDrawableRect(final int compWidth, final int compHeight) {
 		int x = currentRect.x;
 		int y = currentRect.y;
 		int width = currentRect.width;

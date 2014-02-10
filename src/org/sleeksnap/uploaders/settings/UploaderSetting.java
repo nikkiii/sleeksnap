@@ -23,28 +23,29 @@ import javax.swing.JComponent;
  * A wrapper to contain the component and setting type of an uploader setting
  * 
  * @author Nikki
- *
+ * 
  */
 public class UploaderSetting {
 	/**
 	 * The component attached to this setting
 	 */
-	private JComponent component;
-	
+	private final JComponent component;
+
 	/**
 	 * The setting type to use when getting the value
 	 */
-	private UploaderSettingType type;
-	
-	public UploaderSetting(JComponent component, UploaderSettingType type) {
+	private final UploaderSettingType type;
+
+	public UploaderSetting(final JComponent component,
+			final UploaderSettingType type) {
 		this.component = component;
 		this.type = type;
 	}
 
 	/**
 	 * Get this setting's component
-	 * @return
-	 * 		The component
+	 * 
+	 * @return The component
 	 */
 	public JComponent getComponent() {
 		return component;
@@ -52,8 +53,8 @@ public class UploaderSetting {
 
 	/**
 	 * Get this setting's type
-	 * @return
-	 * 		The setting type
+	 * 
+	 * @return The setting type
 	 */
 	public UploaderSettingType getType() {
 		return type;

@@ -36,56 +36,105 @@ import org.sleeksnap.uploaders.settings.UploaderSettings;
 public abstract class Uploader<T extends Upload> {
 
 	/**
+	 * The parent uploader, used if this is a sub uploader of another generic
+	 * uploader
+	 */
+	protected Uploader<?> parent;
+
+	/**
 	 * The properties instance
 	 */
 	protected UploaderSettings settings = new UploaderSettings();
-	
-	/**
-	 * The parent uploader, used if this is a sub uploader of another generic uploader
-	 */
-	protected Uploader<?> parent;
-	
+
 	public Uploader() {
-		
+
 	}
-	
-	public Uploader(Uploader<?> parent) {
+
+	public Uploader(final Uploader<?> parent) {
 		this.parent = parent;
 	}
 
 	/**
 	 * Get the uploader name
 	 * 
-	 * @return
-	 * 		The uploader name
+	 * @return The uploader name
 	 */
 	public abstract String getName();
 
+	public Uploader<?> getParentUploader() {
+		return parent;
+	}
+
 	/**
-	 * Upload the specified object
+	 * Get this uploader's properties
 	 * 
-	 * @param t
-	 *      The object
-	 * @return
-	 * 		The URL or Location
-	 * @throws Exception
+	 * @return The properties
 	 */
-	public abstract String upload(T t) throws Exception;
+	public UploaderSettings getSettings() {
+		return settings;
+	}
+
+	/**
+	 * Get the Settings annotation from an uploader
+	 * 
+	 * @return The settings, or null if it doesn't have any
+	 */
+	public Settings getSettingsAnnotation() {
+		Settings settings = getClass().getAnnotation(Settings.class);
+
+		if (settings == null && parent != null) {
+			settings = parent.getSettingsAnnotation();
+		}
+		return settings;
+	}
+
+	/**
+	 * Check if this class directly has settings
+	 * 
+	 * @return True if this class has settings
+	 */
+	public boolean hasDirectSettings() {
+		return getClass().isAnnotationPresent(Settings.class);
+	}
+
+	public boolean hasParent() {
+		return parent != null;
+	}
+
+	/**
+	 * Check if this uploader (or generic uploader parent) has settings
+	 * 
+	 * @return True if this uploader has settings
+	 */
+	public boolean hasSettings() {
+		return hasDirectSettings() || parent != null && parent.hasSettings();
+	}
 
 	/**
 	 * Load the settings from the specified file
 	 * 
 	 * @param file
-	 * 		The file to load from
+	 *            The file to load from
 	 * @throws IOException
 	 *             If an error occurred while loading
 	 */
-	public void loadSettings(File file) throws IOException {
-		FileInputStream input = new FileInputStream(file);
+	public void loadSettings(final File file) throws IOException {
+		final FileInputStream input = new FileInputStream(file);
 		try {
 			settings.load(file);
 		} finally {
 			input.close();
+		}
+	}
+
+	/**
+	 * Can be overidden to get a call when it is activated/set as default (On
+	 * Load or User Settings) By default, if this is a sub uploader for a
+	 * Generic uploader, it will call the parent's onActivation method
+	 */
+	public void onActivation() {
+		if (parent != null) {
+			parent.onActivation();
 		}
 	}
 
@@ -97,37 +146,20 @@ public abstract class Uploader<T extends Upload> {
 	 * @throws IOException
 	 *             If an error occurred while saving
 	 */
-	public void saveSettings(File file) throws IOException {
-		FileOutputStream out = new FileOutputStream(file);
+	public void saveSettings(final File file) throws IOException {
+		final FileOutputStream out = new FileOutputStream(file);
 		try {
 			settings.saveTo(out);
 		} finally {
 			out.close();
 		}
 	}
-	
+
 	/**
-	 * Can be overridden by the uploader to validate the settings.
-	 * 
-	 * If invalid, either throw an UploaderConfigurationException or display your own message.
-	 * 
-	 * @param newSettings
-	 * 			The settings object
-	 * @return
-	 * 			true if valid, false if invalid.
+	 * Set this uploader's parent
 	 */
-	public boolean validateSettings(UploaderSettings newSettings) throws UploaderConfigurationException {
-		return true;
-	}
-	
-	/**
-	 * Can be overidden to get a call when it is activated/set as default (On Load or User Settings)
-	 * By default, if this is a sub uploader for a Generic uploader, it will call the parent's onActivation method
-	 */
-	public void onActivation() {
-		if(parent != null) {
-			parent.onActivation();
-		}
+	public void setParentUploader(final Uploader<?> parent) {
+		this.parent = parent;
 	}
 
 	/**
@@ -136,63 +168,32 @@ public abstract class Uploader<T extends Upload> {
 	 * @param settings
 	 *            The Properties object containing the settings
 	 */
-	public void setSettings(UploaderSettings settings) {
+	public void setSettings(final UploaderSettings settings) {
 		this.settings = settings;
 	}
 
 	/**
-	 * Get this uploader's properties
+	 * Upload the specified object
 	 * 
-	 * @return The properties
+	 * @param t
+	 *            The object
+	 * @return The URL or Location
+	 * @throws Exception
 	 */
-	public UploaderSettings getSettings() {
-		return settings;
-	}
-	
-	/**
-	 * Set this uploader's parent
-	 */
-	public void setParentUploader(Uploader<?> parent) {
-		this.parent = parent;
-	}
-	
-	public Uploader<?> getParentUploader() {
-		return parent;
-	}
-
-	public boolean hasParent() {
-		return parent != null;
-	}
-	
-	/**
-	 * Check if this class directly has settings
-	 * @return
-	 * 		True if this class has settings
-	 */
-	public boolean hasDirectSettings() {
-		return getClass().isAnnotationPresent(Settings.class);
-	}
-	
-	/**
-	 * Check if this uploader (or generic uploader parent) has settings
-	 * @return
-	 * 		True if this uploader has settings
-	 */
-	public boolean hasSettings() {
-		return hasDirectSettings() || parent != null && parent.hasSettings();
-	}
+	public abstract String upload(T t) throws Exception;
 
 	/**
-	 * Get the Settings annotation from an uploader
+	 * Can be overridden by the uploader to validate the settings.
 	 * 
-	 * @return The settings, or null if it doesn't have any
+	 * If invalid, either throw an UploaderConfigurationException or display
+	 * your own message.
+	 * 
+	 * @param newSettings
+	 *            The settings object
+	 * @return true if valid, false if invalid.
 	 */
-	public Settings getSettingsAnnotation() {
-		Settings settings = getClass().getAnnotation(Settings.class);
-		
-		if (settings == null && parent != null) {
-			settings = parent.getSettingsAnnotation();
-		}
-		return settings;
+	public boolean validateSettings(final UploaderSettings newSettings)
+			throws UploaderConfigurationException {
+		return true;
 	}
 }

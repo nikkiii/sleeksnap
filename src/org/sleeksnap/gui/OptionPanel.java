@@ -25,6 +25,7 @@ import java.lang.reflect.Constructor;
 import javax.swing.GroupLayout;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -48,23 +49,28 @@ import org.sleeksnap.util.Util;
 @SuppressWarnings({ "serial" })
 public class OptionPanel extends JPanel {
 
-	private ScreenSnapper snapper;
-
-	private JTabbedPane jTabbedPane1;
-
-	private int previousTab = 0;
-
-	private InfoPanel infoPanel;
-
-	private UploaderPanel uploaderPanel;
-
-	private HotkeyPanel hotkeyPanel;
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 5423078207600912960L;
 
 	private HistoryPanel historyPanel;
 
+	private HotkeyPanel hotkeyPanel;
+
+	private InfoPanel infoPanel;
+
+	private JTabbedPane jTabbedPane1;
+
 	private LogPanel logPanel;
 
-	public OptionPanel(ScreenSnapper snapper) {
+	private int previousTab = 0;
+
+	private final ScreenSnapper snapper;
+
+	private UploaderPanel uploaderPanel;
+
+	public OptionPanel(final ScreenSnapper snapper) {
 		this.snapper = snapper;
 		initComponents();
 	}
@@ -75,6 +81,18 @@ public class OptionPanel extends JPanel {
 		hotkeyPanel.doneBuilding();
 		historyPanel.doneBuilding();
 		logPanel.doneBuilding();
+	}
+
+	public Configuration getConfiguration() {
+		return snapper.getConfiguration();
+	}
+
+	public ScreenSnapper getSnapper() {
+		return snapper;
+	}
+
+	public UploaderPanel getUploaderPanel() {
+		return uploaderPanel;
 	}
 
 	private void initComponents() {
@@ -99,7 +117,7 @@ public class OptionPanel extends JPanel {
 
 		setMinimumSize(new java.awt.Dimension(500, 300));
 
-		jTabbedPane1.setTabPlacement(JTabbedPane.LEFT);
+		jTabbedPane1.setTabPlacement(SwingConstants.LEFT);
 		jTabbedPane1.setCursor(new java.awt.Cursor(
 				java.awt.Cursor.DEFAULT_CURSOR));
 
@@ -112,11 +130,11 @@ public class OptionPanel extends JPanel {
 		jTabbedPane1.addTab("History", historyPanel);
 
 		jTabbedPane1.addTab("Log", logPanel);
-		
+
 		initializeTab("Updater", UpdaterPanel.class);
 
-		GroupLayout layout = new GroupLayout(this);
-		this.setLayout(layout);
+		final GroupLayout layout = new GroupLayout(this);
+		setLayout(layout);
 		layout.setHorizontalGroup(layout.createParallelGroup(
 				GroupLayout.Alignment.LEADING).addComponent(jTabbedPane1,
 				GroupLayout.PREFERRED_SIZE, 520, GroupLayout.PREFERRED_SIZE));
@@ -126,16 +144,17 @@ public class OptionPanel extends JPanel {
 
 		jTabbedPane1.addChangeListener(new ChangeListener() {
 			@Override
-			public void stateChanged(ChangeEvent e) {
-				int index = jTabbedPane1.getSelectedIndex();
+			public void stateChanged(final ChangeEvent e) {
+				final int index = jTabbedPane1.getSelectedIndex();
 				if (index == 4) {
 					// Load the log
-					File file = new File(Util.getWorkingDirectory(), "log.txt");
+					final File file = new File(Util.getWorkingDirectory(),
+							"log.txt");
 					try {
-						String contents = StreamUtils
+						final String contents = StreamUtils
 								.readContents(new FileInputStream(file));
 						logPanel.setContents(contents);
-					} catch (IOException ex) {
+					} catch (final IOException ex) {
 						ex.printStackTrace();
 					}
 				}
@@ -152,42 +171,31 @@ public class OptionPanel extends JPanel {
 		// Do any loading/initializing
 		hotkeyPanel.loadCurrentHotkeys();
 	}
-	
-	public void initializeTab(String name, Class<?> cl) {
+
+	public void initializeTab(final String name, final Class<?> cl) {
 		try {
-			Constructor<?> c = cl.getConstructor(OptionPanel.class);
-			if(c == null) {
-				throw new NoSuchMethodException("Unable to find a valid constructor!");
+			final Constructor<?> c = cl.getConstructor(OptionPanel.class);
+			if (c == null) {
+				throw new NoSuchMethodException(
+						"Unable to find a valid constructor!");
 			}
-			
-			OptionSubPanel panel = (OptionSubPanel) c.newInstance(this);
-			
+
+			final OptionSubPanel panel = (OptionSubPanel) c.newInstance(this);
+
 			panel.initComponents();
-			
+
 			jTabbedPane1.addTab(name, panel);
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			e.printStackTrace();
 		}
-	}
-
-	public void setHistory(History history) {
-		historyPanel.setHistory(history);
-	}
-
-	public UploaderPanel getUploaderPanel() {
-		return uploaderPanel;
-	}
-
-	public ScreenSnapper getSnapper() {
-		return snapper;
-	}
-
-	public Configuration getConfiguration() {
-		return snapper.getConfiguration();
 	}
 
 	public void saveAll() {
 		hotkeyPanel.savePreferences();
 		uploaderPanel.savePreferences();
+	}
+
+	public void setHistory(final History history) {
+		historyPanel.setHistory(history);
 	}
 }

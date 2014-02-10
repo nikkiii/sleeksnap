@@ -23,7 +23,8 @@ import java.util.logging.SimpleFormatter;
 import org.sleeksnap.gui.options.LogPanel;
 
 /**
- * A simple java logging handler to log to the Log Panel in the settings gui when it is open.
+ * A simple java logging handler to log to the Log Panel in the settings gui
+ * when it is open.
  * 
  * @author Nikki
  * 
@@ -33,23 +34,31 @@ public class LogPanelHandler extends java.util.logging.Handler {
 	private static LogPanel logPanel;
 
 	/**
+	 * Bind this logging handler to a LogPanel instance to update the log screen
+	 * 
+	 * @param logPanel
+	 *            The panel to bind
+	 */
+	public static void bindTo(final LogPanel logPanel) {
+		LogPanelHandler.logPanel = logPanel;
+	}
+
+	/**
+	 * Unbind the LogPanel instance (Always done when the settings gui is
+	 * closed)
+	 */
+	public static void unbind() {
+		LogPanelHandler.logPanel = null;
+	}
+
+	/**
 	 * A simple file logger!
 	 */
 	public LogPanelHandler() {
 	}
 
 	@Override
-	public void publish(LogRecord record) {
-		if(logPanel == null) {
-			return;
-		}
-		if (getFormatter() == null)
-			setFormatter(new SimpleFormatter());
-		
-		if (!isLoggable(record))
-			return;
-		
-		logPanel.appendLog(getFormatter().format(record));
+	public void close() throws SecurityException {
 	}
 
 	@Override
@@ -57,22 +66,18 @@ public class LogPanelHandler extends java.util.logging.Handler {
 	}
 
 	@Override
-	public void close() throws SecurityException {
-	}
+	public void publish(final LogRecord record) {
+		if (logPanel == null) {
+			return;
+		}
+		if (getFormatter() == null) {
+			setFormatter(new SimpleFormatter());
+		}
 
-	/**
-	 * Bind this logging handler to a LogPanel instance to update the log screen
-	 * @param logPanel
-	 * 			The panel to bind
-	 */
-	public static void bindTo(LogPanel logPanel) {
-		LogPanelHandler.logPanel = logPanel;
-	}
+		if (!isLoggable(record)) {
+			return;
+		}
 
-	/**
-	 * Unbind the LogPanel instance (Always done when the settings gui is closed)
-	 */
-	public static void unbind() {
-		LogPanelHandler.logPanel = null;
+		logPanel.appendLog(getFormatter().format(record));
 	}
 }
