@@ -52,6 +52,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
+import javax.swing.WindowConstants;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -101,6 +102,7 @@ import org.sleeksnap.uploaders.text.SlexyUploader;
 import org.sleeksnap.uploaders.text.UpasteUploader;
 import org.sleeksnap.uploaders.url.GoogleShortener;
 import org.sleeksnap.uploaders.url.IsgdShortener;
+import org.sleeksnap.uploaders.url.PostShortner;
 import org.sleeksnap.uploaders.url.TUrlShortener;
 import org.sleeksnap.uploaders.url.TinyURLShortener;
 import org.sleeksnap.util.ProgramOptions;
@@ -134,18 +136,22 @@ public class ScreenSnapper {
 	@SuppressWarnings("serial")
 	private class ActionMenuItem extends MenuItem implements ActionListener {
 		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 4500523364683028381L;
+		/**
 		 * The action id
 		 */
-		private int action;
+		private final int action;
 
-		public ActionMenuItem(String s, int action) {
+		public ActionMenuItem(final String s, final int action) {
 			super(s);
 			this.action = action;
 			addActionListener(this);
 		}
 
 		@Override
-		public void actionPerformed(ActionEvent e) {
+		public void actionPerformed(final ActionEvent e) {
 			hotkey(action);
 		}
 	}
@@ -157,12 +163,18 @@ public class ScreenSnapper {
 	 * 
 	 */
 	public static class ScreenshotAction {
-		private static final int CROP = 1;
-		private static final int FULL = 2;
-		private static final int CLIPBOARD = 3;
 		public static final int ACTIVE = 4;
+		private static final int CLIPBOARD = 3;
+		private static final int CROP = 1;
 		public static final int FILE = 5;
+		private static final int FULL = 2;
 	}
+
+	/**
+	 * Logging instance
+	 */
+	private static final Logger logger = Logger.getLogger(ScreenSnapper.class
+			.getName());
 
 	/**
 	 * A basic hack for class associations -> names
@@ -182,65 +194,50 @@ public class ScreenSnapper {
 	}
 
 	/**
-	 * Logging instance
+	 * Get the settings file for an uploader class
+	 * 
+	 * @param uploader
+	 *            The uploader's class
+	 * @return The settings file path
 	 */
-	private static final Logger logger = Logger.getLogger(ScreenSnapper.class.getName());
+	public static File getSettingsFile(final Class<?> uploader) {
+		return getSettingsFile(uploader, "json");
+	}
 
-	public static void main(String[] args) {
+	/**
+	 * Get the settings file for an uploader class
+	 * 
+	 * @param uploader
+	 *            The uploader's class
+	 * @return The settings file path
+	 */
+	public static File getSettingsFile(final Class<?> uploader, final String ext) {
+		String name = uploader.getName();
+		if (name.contains("$")) {
+			name = name.substring(0, name.indexOf('$'));
+		}
+		final File directory = new File(Util.getWorkingDirectory(), "config");
+		if (!directory.exists()) {
+			directory.mkdirs();
+		}
+		return new File(directory, name + "." + ext);
+	}
+
+	public static void main(final String[] args) {
 		// Initialize
-		ScreenSnapper instance = new ScreenSnapper();
+		final ScreenSnapper instance = new ScreenSnapper();
 		instance.initialize(ProgramOptions.parseSettings(args));
 	}
 
 	/**
-	 * A map which contains uploader classes -> a list of available uploaders
+	 * The configuration instance
 	 */
-	private HashMap<Class<? extends Upload>, Map<String, Uploader<?>>> uploaders = new HashMap<Class<? extends Upload>, Map<String, Uploader<?>>>();
-
-	/**
-	 * A map which contains the current uploader settings
-	 */
-	private HashMap<Class<? extends Upload>, Uploader<?>> uploaderAssociations = new HashMap<Class<? extends Upload>, Uploader<?>>();
+	private final Configuration configuration = new Configuration();
 
 	/**
 	 * A map containing upload filters
 	 */
-	private HashMap<Class<? extends Upload>, LinkedList<UploadFilter<?>>> filters = new HashMap<Class<? extends Upload>, LinkedList<UploadFilter<?>>>();
-
-	/**
-	 * The basic service...
-	 */
-	private ExecutorService serv = Executors.newSingleThreadExecutor();
-
-	/**
-	 * The ExecutorService used to upload
-	 */
-	private ExecutorService uploadService = Executors.newSingleThreadExecutor();
-
-	/**
-	 * The tray icon
-	 */
-	private TrayIcon icon;
-
-	/**
-	 * The configuration instance
-	 */
-	private Configuration configuration = new Configuration();
-
-	/**
-	 * The selection window instances
-	 */
-	private SelectionWindow window = null;
-
-	/**
-	 * Defines whether the options panel is open
-	 */
-	private boolean optionsOpen;
-
-	/**
-	 * The hotkey manager instance
-	 */
-	private HotkeyManager keyManager;
+	private final HashMap<Class<? extends Upload>, LinkedList<UploadFilter<?>>> filters = new HashMap<Class<? extends Upload>, LinkedList<UploadFilter<?>>>();
 
 	/**
 	 * The history instance
@@ -248,139 +245,63 @@ public class ScreenSnapper {
 	private History history;
 
 	/**
+	 * The tray icon
+	 */
+	private TrayIcon icon;
+
+	/**
+	 * The hotkey manager instance
+	 */
+	private HotkeyManager keyManager;
+
+	/**
 	 * The last uploaded URL, used for clicking tray icon
 	 */
 	private String lastUrl;
 
+	/**
+	 * Defines whether the options panel is open
+	 */
+	private boolean optionsOpen;
+
 	private int retries;
 
 	/**
-	 * Initialize the program
-	 * 
-	 * @param map
-	 *            Flag to reset configuration
+	 * The basic service...
 	 */
-	private void initialize(Map<String, Object> map) {
-		// Check for a configuration option
-		if (map.containsKey("dir")) {
-			File file = new File(map.get("dir").toString());
-			if (!file.exists()) {
-				file.mkdirs();
-			}
-			Util.setWorkingDirectory(file);
-		}
-		// Verify the directory
-		File local = Util.getWorkingDirectory();
-		if (!local.exists()) {
-			local.mkdirs();
-		}
-		// Load the Release info
-		URL releaseUrl = Util.getResourceByName("/org/sleeksnap/release.json");
-		JSONObject releaseInfo = new JSONObject();
-		if(releaseUrl != null) {
-			try {
-				releaseInfo = new JSONObject(new JSONTokener(releaseUrl.openStream()));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		// Set the UI skin
-		try {
-			UIManager.setLookAndFeel(releaseInfo.getString("uiClass", UIManager.getSystemLookAndFeelClassName()));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		// Then start
-		try {
-			LoggingManager.configure();
-		} catch(IOException e) {
-			logger.log(Level.WARNING, "Unable to configure logger, file logging and logging panel will not work.", e);
-			JOptionPane.showMessageDialog(null, "Unable to configure logger, file logging and logging panel will not work.", "Error", JOptionPane.ERROR_MESSAGE);
-		}
-		logger.info("Loading plugins...");
-		try {
-			loadUploaders();
-			loadFilters();
-		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Failed to load plugins!", e);
-		}
-		// Load the settings
-		logger.info("Loading settings...");
-		try {
-			loadSettings(map.containsKey("resetconfig"));
-		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Failed to load settings!", e);
-		}
-		// Load the selected language
-		try {
-			Language.load(map.containsKey("language") ? map.get("language").toString() : configuration.getString("language", Constants.Configuration.DEFAULT_LANGUAGE));
-		} catch (IOException e) {
-			logger.log(Level.SEVERE, "Failed to load language file!", e);
-		}
-		// Check the update mode
-		UpdaterMode mode = configuration.getEnumValue("updateMode", UpdaterMode.class);
-		if (mode != UpdaterMode.MANUAL) {
-			UpdaterReleaseType type = configuration.getEnumValue("updateReleaseType", UpdaterReleaseType.class);
-			Updater updater = new Updater();
-			if (updater.checkUpdate(type, mode == UpdaterMode.PROMPT)) {
-				return;
-			}
-		}
-		// Load the history
-		logger.info("Loading history...");
-		File historyFile = new File(local, "history.json");
-		history = new History(historyFile);
-		if (historyFile.exists()) {
-			logger.info("Using existing history file.");
-			try {
-				history.load();
-			} catch (Exception e) {
-				logger.log(Level.WARNING, "Failed to load history", e);
-			}
-		} else {
-			logger.info("Using new history file.");
-		}
-		// Validate settings
-		if (!configuration.contains("hotkeys") || !configuration.contains("uploaders")) {
-			promptConfigurationReset();
-		}
-		// Register the hotkeys
-		logger.info("Registering keys...");
-		keyManager = new HotkeyManager(this);
-		keyManager.initializeInput();
-		logger.info("Opening tray icon...");
-		initializeTray();
-		logger.info("Ready.");
-	}
+	private final ExecutorService serv = Executors.newSingleThreadExecutor();
 
 	/**
-	 * Prompt the user for a configuration reset
+	 * A map which contains the current uploader settings
 	 */
-	public void promptConfigurationReset() {
-		int option = JOptionPane.showConfirmDialog(null, Language.getString("settingsCorrupted"), Language.getString("errorLoadingSettings"), JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
-		if (option == JOptionPane.YES_OPTION) {
-			try {
-				loadSettings(true);
-			} catch (Exception e) {
-				logger.log(Level.SEVERE, "Unable to load default settings!", e);
-			}
-		} else if (option == JOptionPane.NO_OPTION) {
-			// If no, let them set the configuration themselves..
-			openSettings();
-		} else if (option == JOptionPane.CANCEL_OPTION) {
-			// Exit, they don't want anything to do with it.
-			System.exit(0);
-		}
-	}
+	private final HashMap<Class<? extends Upload>, Uploader<?>> uploaderAssociations = new HashMap<Class<? extends Upload>, Uploader<?>>();
+
+	/**
+	 * A map which contains uploader classes -> a list of available uploaders
+	 */
+	private final HashMap<Class<? extends Upload>, Map<String, Uploader<?>>> uploaders = new HashMap<Class<? extends Upload>, Map<String, Uploader<?>>>();
+
+	/**
+	 * The ExecutorService used to upload
+	 */
+	private final ExecutorService uploadService = Executors
+			.newSingleThreadExecutor();
+
+	/**
+	 * The selection window instances
+	 */
+	private SelectionWindow window = null;
 
 	/**
 	 * Perform a capture of the active window
 	 */
 	public void active() {
 		try {
-			upload(new ImageUpload(ScreenshotUtil.capture(WindowUtilProvider.getWindowUtil().getActiveWindow().getBounds())));
-		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Unable to take the active window screenshot", e);
+			upload(new ImageUpload(ScreenshotUtil.capture(WindowUtilProvider
+					.getWindowUtil().getActiveWindow().getBounds())));
+		} catch (final Exception e) {
+			logger.log(Level.SEVERE,
+					"Unable to take the active window screenshot", e);
 			showException(e);
 		}
 	}
@@ -397,39 +318,54 @@ public class ScreenSnapper {
 	 */
 	public void clipboard() {
 		try {
-			Object clipboard = ClipboardUtil.getClipboardContents();
+			final Object clipboard = ClipboardUtil.getClipboardContents();
 			if (clipboard == null) {
-				icon.displayMessage(Language.getString("invalidClipboard"), Language.getString("invalidClipboardTitle"), TrayIcon.MessageType.WARNING);
+				icon.displayMessage(Language.getString("invalidClipboard"),
+						Language.getString("invalidClipboardTitle"),
+						TrayIcon.MessageType.WARNING);
 				return;
 			}
 			if (clipboard instanceof BufferedImage) {
 				upload(new ImageUpload((BufferedImage) clipboard));
 			} else if (clipboard instanceof File) {
-				File file = (File) clipboard;
-				String mime = FileUtils.getMimeType(file.getAbsolutePath());
+				final File file = (File) clipboard;
+				final String mime = FileUtils.getMimeType(file
+						.getAbsolutePath());
 
 				// A better way to upload images, it'll check the mime type!
 				if (mime.startsWith("image")) {
 					upload(new ImageUpload(ImageIO.read(file)));
-				} else if (mime.startsWith("text") && configuration.getBoolean("plainTextUpload")) {
+				} else if (mime.startsWith("text")
+						&& configuration.getBoolean("plainTextUpload")) {
 					upload(new TextUpload(FileUtils.readFile(file)));
 				} else {
 					upload(new FileUpload(file));
 				}
 			} else if (clipboard instanceof String) {
-				String string = clipboard.toString();
-				if (string.matches("((mailto\\:|(news|(ht|f)tp(s?))\\://){1}\\S+)")) {
+				final String string = clipboard.toString();
+				if (string
+						.matches("((mailto\\:|(news|(ht|f)tp(s?))\\://){1}\\S+)")) {
 					upload(new URLUpload(clipboard.toString()));
 				} else {
 					upload(new TextUpload(string));
 				}
 			}
-		} catch (ClipboardException e) {
+		} catch (final ClipboardException e) {
 			logger.log(Level.SEVERE, "Unable to get clipboard contents", e);
 			showException(e);
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public boolean convertUploadDefinition(final JSONObject uploadConfig,
+			final Class<?> originalClass, final Class<?> newClass) {
+		if (uploadConfig.has(originalClass.getName())) {
+			uploadConfig.put(newClass.getName(),
+					uploadConfig.remove(originalClass.getName()));
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -439,7 +375,7 @@ public class ScreenSnapper {
 		if (window != null) {
 			return;
 		}
-		
+
 		window = new SelectionWindow(this, DisplayUtil.getRealScreenSize());
 		window.pack();
 		window.setAlwaysOnTop(true);
@@ -447,10 +383,108 @@ public class ScreenSnapper {
 	}
 
 	/**
+	 * Execute an upload
+	 * 
+	 * @param object
+	 *            The object to upload
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public void executeUpload(Upload object) {
+		// Run the object through the filters
+		if (filters.containsKey(object.getClass())) {
+			for (final UploadFilter filter : filters.get(object.getClass())) {
+				try {
+					object = filter.filter(object);
+				} catch (final FilterException e) {
+					// FilterExceptions when thrown should interrupt the upload.
+					showException(e, e.getErrorMessage());
+					return;
+				}
+			}
+		}
+		// Then upload it
+		final Uploader uploader = uploaderAssociations.get(object.getClass());
+		if (uploader != null) {
+			try {
+				String url = uploader.upload(object);
+				if (url != null) {
+					if (configuration.getBoolean("shortenurls")) {
+						final Uploader shortener = uploaderAssociations
+								.get(URL.class);
+						if (shortener != null) {
+							url = shortener.upload(new URLUpload(url));
+						}
+					}
+					if (object instanceof ImageUpload) {
+						if (configuration.getBoolean("savelocal")
+								&& !(uploader instanceof ImageLocalFileUploader)) {
+							final FileOutputStream output = new FileOutputStream(
+									getLocalFile(DateUtil.getCurrentDate()
+											+ ".png"));
+							try {
+								ImageIO.write(
+										((ImageUpload) object).getImage(),
+										"png", output);
+							} finally {
+								output.close();
+							}
+						}
+						((ImageUpload) object).getImage().flush();
+						((ImageUpload) object).setImage(null);
+					}
+					url = url.trim();
+
+					retries = 0;
+
+					ClipboardUtil.setClipboard(url);
+
+					lastUrl = url;
+					history.addEntry(new HistoryEntry(url, uploader.getName()));
+					icon.displayMessage(Language.getString("uploadComplete"),
+							Language.getString("uploadedTo", url),
+							TrayIcon.MessageType.INFO);
+					logger.info("Upload completed, url: " + url);
+				} else {
+					icon.displayMessage(Language.getString("uploadFailed"),
+							Language.getString("uploadFailedError"),
+							TrayIcon.MessageType.ERROR);
+					logger.severe("Upload failed to execute due to an unknown error");
+				}
+			} catch (final UploaderConfigurationException e) {
+				icon.displayMessage(Language.getString("uploaderConfigError"),
+						Language.getString("uploaderConfigErrorMessage"),
+						TrayIcon.MessageType.ERROR);
+				logger.log(Level.SEVERE, "Upload failed to execute", e);
+			} catch (final Exception e) {
+				// Retry until retries > max
+				final StringBuilder msg = new StringBuilder(
+						"The upload failed to execute: ");
+				msg.append(e.getMessage());
+				final int max = configuration.getInteger("max_retries",
+						Constants.Configuration.DEFAULT_MAX_RETRIES);
+				if (retries++ < max) {
+					logger.info("Retrying upload (" + retries + " of " + max
+							+ " retries)...");
+					msg.append("\nRetrying...");
+					upload(object);
+				} else {
+					msg.append("\nReached retry limit, upload aborted.");
+					logger.log(Level.SEVERE,
+							"Upload failed to execute, retries: " + retries, e);
+					retries = 0;
+				}
+				icon.displayMessage(Language.getString("uploadFailed"),
+						msg.toString(), TrayIcon.MessageType.ERROR);
+			}
+		}
+	}
+
+	/**
 	 * Perform a full screenshot action
 	 */
 	public void full() {
-		upload(new ImageUpload(ScreenshotUtil.capture(DisplayUtil.getRealScreenSize())));
+		upload(new ImageUpload(ScreenshotUtil.capture(DisplayUtil
+				.getRealScreenSize())));
 	}
 
 	/**
@@ -463,6 +497,28 @@ public class ScreenSnapper {
 	}
 
 	/**
+	 * Gets a filter's parent class type
+	 * 
+	 * @param filter
+	 * @return The class representing the filter's upload type
+	 */
+	@SuppressWarnings("unchecked")
+	public Class<? extends Upload> getFilterType(final UploadFilter<?> filter) {
+		// Find the uploader type
+		final Type[] types = filter.getClass().getGenericInterfaces();
+		for (final Type type : types) {
+			if (type instanceof ParameterizedType) {
+				final ParameterizedType parameterizedType = (ParameterizedType) type;
+				if (parameterizedType.getRawType() == UploadFilter.class) {
+					return (Class<? extends Upload>) parameterizedType
+							.getActualTypeArguments()[0];
+				}
+			}
+		}
+		throw new RuntimeException("Attempted to load invalid filter!");
+	}
+
+	/**
 	 * Get the Hotkey Manager
 	 * 
 	 * @return The hotkey manager
@@ -472,33 +528,18 @@ public class ScreenSnapper {
 	}
 
 	/**
-	 * Get the settings file for an uploader class
+	 * Get the local file for image archiving
 	 * 
-	 * @param uploader
-	 *            The uploader's class
-	 * @return The settings file path
+	 * @param fileName
+	 *            The file name
+	 * @return The constructed File object
 	 */
-	public static File getSettingsFile(Class<?> uploader) {
-		return getSettingsFile(uploader, "json");
-	}
-
-	/**
-	 * Get the settings file for an uploader class
-	 * 
-	 * @param uploader
-	 *            The uploader's class
-	 * @return The settings file path
-	 */
-	public static File getSettingsFile(Class<?> uploader, String ext) {
-		String name = uploader.getName();
-		if (name.contains("$")) {
-			name = name.substring(0, name.indexOf('$'));
+	public File getLocalFile(final String fileName) {
+		final File dir = new File(Util.getWorkingDirectory(), "images");
+		if (!dir.exists()) {
+			dir.mkdirs();
 		}
-		File directory = new File(Util.getWorkingDirectory(), "config");
-		if (!directory.exists()) {
-			directory.mkdirs();
-		}
-		return new File(directory, name + "." + ext);
+		return new File(dir, fileName);
 	}
 
 	/**
@@ -526,8 +567,39 @@ public class ScreenSnapper {
 	 *            The type
 	 * @return The uploader
 	 */
-	public Uploader<?> getUploaderFor(Class<?> cl) {
+	public Uploader<?> getUploaderFor(final Class<?> cl) {
 		return uploaderAssociations.get(cl);
+	}
+
+	/**
+	 * Attempt to get the upload type from the Superclass
+	 * 
+	 * @param uploader
+	 *            The uploader to get the type from
+	 * @return The type
+	 */
+	@SuppressWarnings("unchecked")
+	public Class<? extends Upload> getUploaderType(
+			final Uploader<? extends Upload> uploader) {
+		// Find the uploader type
+		final ParameterizedType parameterizedType = (ParameterizedType) uploader
+				.getClass().getGenericSuperclass();
+		final Type[] args = parameterizedType.getActualTypeArguments();
+		if (args.length == 0) {
+			throw new RuntimeException("Uploader does not include a valid type");
+		}
+		return (Class<? extends Upload>) args[0];
+	}
+
+	/**
+	 * Check if we have an uploader for a type
+	 * 
+	 * @param class1
+	 *            The type to check
+	 * @return True, if we have an uploader
+	 */
+	public boolean hasUploaderFor(final Class<? extends Object> class1) {
+		return uploaderAssociations.containsKey(class1);
 	}
 
 	/**
@@ -539,6 +611,7 @@ public class ScreenSnapper {
 	 */
 	public void hotkey(final int ident) {
 		serv.execute(new Runnable() {
+			@Override
 			public void run() {
 				switch (ident) {
 				case ScreenshotAction.CROP:
@@ -562,22 +635,117 @@ public class ScreenSnapper {
 	}
 
 	/**
-	 * Upload a file to the file service by selecting in another window
+	 * Initialize the program
+	 * 
+	 * @param map
+	 *            Flag to reset configuration
 	 */
-	public void selectFile() {
-		JFileChooser chooser = new JFileChooser();
-		chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-		int returnVal = chooser.showOpenDialog(null);
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			File file = chooser.getSelectedFile();
-			int confirm = JOptionPane.showConfirmDialog(null, Language.getString("uploadConfirm", file.getName()), Language.getString("uploadConfirmTitle"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-			if (confirm == JOptionPane.YES_OPTION) {
-				JOptionPane.showMessageDialog(null, Language.getString("fileUploading"), Language.getString("fileUploadTitle"), JOptionPane.INFORMATION_MESSAGE);
-				upload(new FileUpload(file.getAbsoluteFile()));
-			} else {
-				JOptionPane.showMessageDialog(null, Language.getString("fileUploadCanceled"), Language.getString("fileUploadTitle"), JOptionPane.INFORMATION_MESSAGE);
+	private void initialize(final Map<String, Object> map) {
+		// Check for a configuration option
+		if (map.containsKey("dir")) {
+			final File file = new File(map.get("dir").toString());
+			if (!file.exists()) {
+				file.mkdirs();
+			}
+			Util.setWorkingDirectory(file);
+		}
+		// Verify the directory
+		final File local = Util.getWorkingDirectory();
+		if (!local.exists()) {
+			local.mkdirs();
+		}
+		// Load the Release info
+		final URL releaseUrl = Util
+				.getResourceByName("/org/sleeksnap/release.json");
+		JSONObject releaseInfo = new JSONObject();
+		if (releaseUrl != null) {
+			try {
+				releaseInfo = new JSONObject(new JSONTokener(
+						releaseUrl.openStream()));
+			} catch (final IOException e) {
+				e.printStackTrace();
 			}
 		}
+		// Set the UI skin
+		try {
+			UIManager.setLookAndFeel(releaseInfo.getString("uiClass",
+					UIManager.getSystemLookAndFeelClassName()));
+		} catch (final Exception e) {
+			e.printStackTrace();
+		}
+		// Then start
+		try {
+			LoggingManager.configure();
+		} catch (final IOException e) {
+			logger.log(
+					Level.WARNING,
+					"Unable to configure logger, file logging and logging panel will not work.",
+					e);
+			JOptionPane
+					.showMessageDialog(
+							null,
+							"Unable to configure logger, file logging and logging panel will not work.",
+							"Error", JOptionPane.ERROR_MESSAGE);
+		}
+		logger.info("Loading plugins...");
+		try {
+			loadUploaders();
+			loadFilters();
+		} catch (final Exception e) {
+			logger.log(Level.SEVERE, "Failed to load plugins!", e);
+		}
+		// Load the settings
+		logger.info("Loading settings...");
+		try {
+			loadSettings(map.containsKey("resetconfig"));
+		} catch (final Exception e) {
+			logger.log(Level.SEVERE, "Failed to load settings!", e);
+		}
+		// Load the selected language
+		try {
+			Language.load(map.containsKey("language") ? map.get("language")
+					.toString() : configuration.getString("language",
+					Constants.Configuration.DEFAULT_LANGUAGE));
+		} catch (final IOException e) {
+			logger.log(Level.SEVERE, "Failed to load language file!", e);
+		}
+		// Check the update mode
+		final UpdaterMode mode = configuration.getEnumValue("updateMode",
+				UpdaterMode.class);
+		if (mode != UpdaterMode.MANUAL) {
+			final UpdaterReleaseType type = configuration.getEnumValue(
+					"updateReleaseType", UpdaterReleaseType.class);
+			final Updater updater = new Updater();
+			if (updater.checkUpdate(type, mode == UpdaterMode.PROMPT)) {
+				return;
+			}
+		}
+		// Load the history
+		logger.info("Loading history...");
+		final File historyFile = new File(local, "history.json");
+		history = new History(historyFile);
+		if (historyFile.exists()) {
+			logger.info("Using existing history file.");
+			try {
+				history.load();
+			} catch (final Exception e) {
+				logger.log(Level.WARNING, "Failed to load history", e);
+			}
+		} else {
+			logger.info("Using new history file.");
+		}
+		// Validate settings
+		if (!configuration.contains("hotkeys")
+				|| !configuration.contains("uploaders")) {
+			promptConfigurationReset();
+		}
+		// Register the hotkeys
+		logger.info("Registering keys...");
+		keyManager = new HotkeyManager(this);
+		keyManager.initializeInput();
+		logger.info("Opening tray icon...");
+		initializeTray();
+		logger.info("Ready.");
 	}
 
 	/**
@@ -585,51 +753,60 @@ public class ScreenSnapper {
 	 */
 	private void initializeTray() {
 		// Add uploaders from the list we loaded earlier
-		PopupMenu tray = new PopupMenu();
+		final PopupMenu tray = new PopupMenu();
 		// Add the action menu
-		tray.add(new ActionMenuItem(Language.getString("cropupload"), ScreenshotAction.CROP));
-		tray.add(new ActionMenuItem(Language.getString("fullupload"), ScreenshotAction.FULL));
-		
+		tray.add(new ActionMenuItem(Language.getString("cropupload"),
+				ScreenshotAction.CROP));
+		tray.add(new ActionMenuItem(Language.getString("fullupload"),
+				ScreenshotAction.FULL));
+
 		if (Platform.isWindows() || Platform.isLinux()) {
-			tray.add(new ActionMenuItem(Language.getString("activeupload"), ScreenshotAction.ACTIVE));
+			tray.add(new ActionMenuItem(Language.getString("activeupload"),
+					ScreenshotAction.ACTIVE));
 		}
-		
+
 		tray.addSeparator();
-		
-		tray.add(new ActionMenuItem(Language.getString("clipboardupload"), ScreenshotAction.CLIPBOARD));
-		tray.add(new ActionMenuItem(Language.getString("fileupload"), ScreenshotAction.FILE));
-		
+
+		tray.add(new ActionMenuItem(Language.getString("clipboardupload"),
+				ScreenshotAction.CLIPBOARD));
+		tray.add(new ActionMenuItem(Language.getString("fileupload"),
+				ScreenshotAction.FILE));
+
 		tray.addSeparator();
-		
-		MenuItem settings = new MenuItem(Language.getString("options"));
+
+		final MenuItem settings = new MenuItem(Language.getString("options"));
 		settings.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(final ActionEvent e) {
 				if (!openSettings()) {
-					icon.displayMessage(Language.getString("error"), Language.getString("optionsOpenError"), TrayIcon.MessageType.ERROR);
+					icon.displayMessage(Language.getString("error"),
+							Language.getString("optionsOpenError"),
+							TrayIcon.MessageType.ERROR);
 				}
 			}
 		});
 		tray.add(settings);
-		
-		MenuItem exit = new MenuItem(Language.getString("exit"));
+
+		final MenuItem exit = new MenuItem(Language.getString("exit"));
 		exit.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(final ActionEvent e) {
 				shutdown();
 			}
 		});
 		tray.add(exit);
-		
-		icon = new TrayIcon(Toolkit.getDefaultToolkit().getImage(Resources.ICON), Application.NAME + " v" + Version.getVersionString());
+
+		icon = new TrayIcon(Toolkit.getDefaultToolkit()
+				.getImage(Resources.ICON), Application.NAME + " v"
+				+ Version.getVersionString());
 		icon.setPopupMenu(tray);
 		icon.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(final ActionEvent e) {
 				if (lastUrl != null) {
 					try {
 						Util.openURL(new URL(lastUrl));
-					} catch (Exception e1) {
+					} catch (final Exception e1) {
 						showException(e1, "Unable to open URL");
 					}
 				}
@@ -637,67 +814,9 @@ public class ScreenSnapper {
 		});
 		try {
 			SystemTray.getSystemTray().add(icon);
-		} catch (AWTException e1) {
+		} catch (final AWTException e1) {
 			this.showException(e1);
 		}
-	}
-
-	/**
-	 * Clean up and shut down
-	 */
-	private void shutdown() {
-		uploadService.shutdown();
-		System.exit(0);
-	}
-
-	/**
-	 * Load settings
-	 */
-	private void loadSettings(boolean resetConfig) throws Exception {
-		File configFile = new File(Util.getWorkingDirectory(), Application.NAME.toLowerCase() + ".conf");
-		if (!configFile.exists() || resetConfig) {
-			configuration.setFile(configFile);
-			loadDefaultConfiguration();
-		} else {
-			configuration.load(configFile);
-		}
-		if (configuration.contains("uploaders")) {
-			JSONObject uploadConfig = configuration.getJSONObject("uploaders");
-
-			if (convertUploadDefinition(uploadConfig, BufferedImage.class, ImageUpload.class) || convertUploadDefinition(uploadConfig, String.class, TextUpload.class) || convertUploadDefinition(uploadConfig, File.class, FileUpload.class) || convertUploadDefinition(uploadConfig, URL.class, URLUpload.class)) {
-				logger.info("Converted upload definitions from old configuration.");
-				configuration.save();
-			}
-
-			@SuppressWarnings("unchecked")
-			Iterator<Object> it$ = uploadConfig.keys();
-			while (it$.hasNext()) {
-				String key = it$.next().toString();
-				String className = uploadConfig.getString(key);
-
-				@SuppressWarnings("unchecked")
-				Class<? extends Upload> clType = (Class<? extends Upload>) Class.forName(key);
-				if (clType != null) {
-					setDefaultUploader(clType, className);
-				}
-			}
-		}
-		if (configuration.contains("startOnStartup") && configuration.getBoolean("startOnStartup")) {
-			// Verify that the paths match, useful for upgrading since it won't
-			// open the old file.
-			File current = FileUtils.getJarFile(ScreenSnapper.class);
-			if (!current.isDirectory()) {
-				Updater.verifyAutostart(current, VerificationMode.INSERT);
-			}
-		}
-	}
-
-	public boolean convertUploadDefinition(JSONObject uploadConfig, Class<?> originalClass, Class<?> newClass) {
-		if (uploadConfig.has(originalClass.getName())) {
-			uploadConfig.put(newClass.getName(), uploadConfig.remove(originalClass.getName()));
-			return true;
-		}
-		return false;
 	}
 
 	/**
@@ -711,24 +830,35 @@ public class ScreenSnapper {
 		configuration.put("plainTextUpload", false);
 		configuration.put("shortenurls", false);
 
-		JSONObject uploaders = new JSONObject();
+		final JSONObject uploaders = new JSONObject();
 
 		// Default uploaders
-		uploaders.put(ImageUpload.class.getName(), ImgurUploader.class.getName());
-		uploaders.put(TextUpload.class.getName(), PasteeUploader.class.getName());
-		uploaders.put(FileUpload.class.getName(), FilebinUploader.class.getName());
-		uploaders.put(URLUpload.class.getName(), GoogleShortener.class.getName());
+		uploaders.put(ImageUpload.class.getName(),
+				ImgurUploader.class.getName());
+		uploaders.put(TextUpload.class.getName(),
+				PasteeUploader.class.getName());
+		uploaders.put(FileUpload.class.getName(),
+				FilebinUploader.class.getName());
+		uploaders.put(URLUpload.class.getName(),
+				GoogleShortener.class.getName());
 
 		configuration.put("uploaders", uploaders);
 
-		JSONObject hotkeys = new JSONObject();
+		final JSONObject hotkeys = new JSONObject();
 
 		// Hotkeys
-		hotkeys.put("full", Platform.isMac() ? HotkeyManager.FULL_HOTKEY_MAC : HotkeyManager.FULL_HOTKEY);
-		hotkeys.put("crop", Platform.isMac() ? HotkeyManager.CROP_HOTKEY_MAC : HotkeyManager.CROP_HOTKEY);
-		hotkeys.put("clipboard", Platform.isMac() ? HotkeyManager.CLIPBOARD_HOTKEY_MAC : HotkeyManager.CLIPBOARD_HOTKEY);
-		hotkeys.put("options", Platform.isMac() ? HotkeyManager.OPTIONS_HOTKEY_MAC : HotkeyManager.OPTIONS_HOTKEY);
-		hotkeys.put("file", Platform.isMac() ? HotkeyManager.FILE_HOTKEY_MAC : HotkeyManager.FILE_HOTKEY);
+		hotkeys.put("full", Platform.isMac() ? HotkeyManager.FULL_HOTKEY_MAC
+				: HotkeyManager.FULL_HOTKEY);
+		hotkeys.put("crop", Platform.isMac() ? HotkeyManager.CROP_HOTKEY_MAC
+				: HotkeyManager.CROP_HOTKEY);
+		hotkeys.put("clipboard",
+				Platform.isMac() ? HotkeyManager.CLIPBOARD_HOTKEY_MAC
+						: HotkeyManager.CLIPBOARD_HOTKEY);
+		hotkeys.put("options",
+				Platform.isMac() ? HotkeyManager.OPTIONS_HOTKEY_MAC
+						: HotkeyManager.OPTIONS_HOTKEY);
+		hotkeys.put("file", Platform.isMac() ? HotkeyManager.FILE_HOTKEY_MAC
+				: HotkeyManager.FILE_HOTKEY);
 
 		if (!Platform.isMac()) {
 			hotkeys.put("active", "alt PRINTSCREEN");
@@ -758,25 +888,85 @@ public class ScreenSnapper {
 		registerFilter(new WatermarkFilter());
 
 		// Load custom filters
-		File dir = new File(Util.getWorkingDirectory(), "plugins/filters");
+		final File dir = new File(Util.getWorkingDirectory(), "plugins/filters");
 		if (!dir.exists()) {
 			dir.mkdirs();
 		}
-		ClassLoader loader = new URLClassLoader(new URL[] { dir.toURI().toURL() });
-		for (File f : dir.listFiles()) {
+		final ClassLoader loader = new URLClassLoader(new URL[] { dir.toURI()
+				.toURL() });
+		for (final File f : dir.listFiles()) {
 			// TODO jar files.
-			String name = f.getName();
+			final String name = f.getName();
 			if (name.endsWith(".class") && !name.contains("$")) {
 				try {
-					Class<?> c = loader.loadClass(f.getName().replaceAll(".class", ""));
-					UploadFilter<?> uploader = (UploadFilter<?>) c.newInstance();
-					if (uploader == null)
+					final Class<?> c = loader.loadClass(f.getName().replaceAll(
+							".class", ""));
+					final UploadFilter<?> uploader = (UploadFilter<?>) c
+							.newInstance();
+					if (uploader == null) {
 						throw new Exception();
+					}
 
 					registerFilter(uploader);
-				} catch (Exception e) {
-					JOptionPane.showMessageDialog(null, Language.getString("loadingError", name, e), Language.getString("filterLoadError", e), JOptionPane.ERROR_MESSAGE);
+				} catch (final Exception e) {
+					JOptionPane.showMessageDialog(null,
+							Language.getString("loadingError", name, e),
+							Language.getString("filterLoadError", e),
+							JOptionPane.ERROR_MESSAGE);
 				}
+			}
+		}
+	}
+
+	/**
+	 * Load settings
+	 */
+	private void loadSettings(final boolean resetConfig) throws Exception {
+		final File configFile = new File(Util.getWorkingDirectory(),
+				Application.NAME.toLowerCase() + ".conf");
+		if (!configFile.exists() || resetConfig) {
+			configuration.setFile(configFile);
+			loadDefaultConfiguration();
+		} else {
+			configuration.load(configFile);
+		}
+		if (configuration.contains("uploaders")) {
+			final JSONObject uploadConfig = configuration
+					.getJSONObject("uploaders");
+
+			if (convertUploadDefinition(uploadConfig, BufferedImage.class,
+					ImageUpload.class)
+					|| convertUploadDefinition(uploadConfig, String.class,
+							TextUpload.class)
+					|| convertUploadDefinition(uploadConfig, File.class,
+							FileUpload.class)
+					|| convertUploadDefinition(uploadConfig, URL.class,
+							URLUpload.class)) {
+				logger.info("Converted upload definitions from old configuration.");
+				configuration.save();
+			}
+
+			@SuppressWarnings("unchecked")
+			final Iterator<Object> it$ = uploadConfig.keys();
+			while (it$.hasNext()) {
+				final String key = it$.next().toString();
+				final String className = uploadConfig.getString(key);
+
+				@SuppressWarnings("unchecked")
+				final Class<? extends Upload> clType = (Class<? extends Upload>) Class
+						.forName(key);
+				if (clType != null) {
+					setDefaultUploader(clType, className);
+				}
+			}
+		}
+		if (configuration.contains("startOnStartup")
+				&& configuration.getBoolean("startOnStartup")) {
+			// Verify that the paths match, useful for upgrading since it won't
+			// open the old file.
+			final File current = FileUtils.getJarFile(ScreenSnapper.class);
+			if (!current.isDirectory()) {
+				Updater.verifyAutostart(current, VerificationMode.INSERT);
 			}
 		}
 	}
@@ -809,12 +999,13 @@ public class ScreenSnapper {
 		registerUploader(new TinyURLShortener());
 		registerUploader(new TUrlShortener());
 		registerUploader(new IsgdShortener());
+		registerUploader(new PostShortner());
 		// File uploaders
 		registerUploader(new FilebinUploader());
 		registerUploader(new UppitUploader());
 
 		// Load custom uploaders
-		UploaderLoader loader = new UploaderLoader(this);
+		final UploaderLoader loader = new UploaderLoader(this);
 		loader.load();
 	}
 
@@ -824,18 +1015,19 @@ public class ScreenSnapper {
 	 * @param uploader
 	 *            The uploader
 	 */
-	private void loadUploaderSettings(Uploader<?> uploader) {
-		if(!uploader.hasSettings()) {
+	private void loadUploaderSettings(final Uploader<?> uploader) {
+		if (!uploader.hasSettings()) {
 			return;
 		}
-		File file = getSettingsFile(uploader.getClass());
+		final File file = getSettingsFile(uploader.getClass());
 		if (!file.exists()) {
-			File old = getSettingsFile(uploader.getClass(), "xml");
+			final File old = getSettingsFile(uploader.getClass(), "xml");
 			if (old.exists()) {
-				logger.info("Converting old xml style file for " + uploader.getName() + " to json...");
-				Properties props = new Properties();
+				logger.info("Converting old xml style file for "
+						+ uploader.getName() + " to json...");
+				final Properties props = new Properties();
 				try {
-					FileInputStream input = new FileInputStream(old);
+					final FileInputStream input = new FileInputStream(old);
 					try {
 						props.loadFromXML(input);
 					} finally {
@@ -843,78 +1035,39 @@ public class ScreenSnapper {
 					}
 					try {
 						// Update the settings
-						setUploaderSettings(uploader, new JSONObject(new JSONTokener(input)));
+						setUploaderSettings(uploader, new JSONObject(
+								new JSONTokener(input)));
 						// Save it
-						if(uploader.hasSettings())
+						if (uploader.hasSettings()) {
 							uploader.getSettings().save(file);
-						else if(uploader.hasParent() && uploader.getParentUploader().hasSettings())
-							uploader.getParentUploader().getSettings().save(file);
+						} else if (uploader.hasParent()
+								&& uploader.getParentUploader().hasSettings()) {
+							uploader.getParentUploader().getSettings()
+									.save(file);
+						}
 						// If everything went well, delete the old file
 						old.delete();
-					} catch (Exception e) {
+					} catch (final Exception e) {
 						e.printStackTrace();
 					}
-				} catch (IOException e) {
+				} catch (final IOException e) {
 					// It's invalid, don't try to use it
 					old.delete();
 				}
 			}
 		} else if (file.exists()) {
 			try {
-				FileInputStream input = new FileInputStream(file);
+				final FileInputStream input = new FileInputStream(file);
 				try {
-					setUploaderSettings(uploader, new JSONObject(new JSONTokener(input)));
+					setUploaderSettings(uploader, new JSONObject(
+							new JSONTokener(input)));
 				} finally {
 					input.close();
 				}
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				file.delete();
 			}
 		}
-	}
-	
-	private void setUploaderSettings(Uploader<?> uploader, JSONObject settings) {
-		if(uploader.hasSettings()) {
-			uploader.getSettings().setBaseObject(settings);
-		} else if(uploader.hasParent() && uploader.getParentUploader().hasSettings()) {
-			uploader.getParentUploader().getSettings().setBaseObject(settings);
-		}
-	}
-
-	/**
-	 * Register an upload filter
-	 * 
-	 * @param filter
-	 *            The filter to register
-	 */
-	public void registerFilter(UploadFilter<?> filter) {
-		Class<? extends Upload> type = getFilterType(filter);
-		LinkedList<UploadFilter<?>> filterList = filters.get(type);
-		if (filterList == null) {
-			filters.put(type, filterList = new LinkedList<UploadFilter<?>>());
-		}
-		filterList.addFirst(filter);
-	}
-
-	/**
-	 * Gets a filter's parent class type
-	 * 
-	 * @param filter
-	 * @return The class representing the filter's upload type
-	 */
-	@SuppressWarnings("unchecked")
-	public Class<? extends Upload> getFilterType(UploadFilter<?> filter) {
-		// Find the uploader type
-		Type[] types = filter.getClass().getGenericInterfaces();
-		for (Type type : types) {
-			if (type instanceof ParameterizedType) {
-				ParameterizedType parameterizedType = (ParameterizedType) type;
-				if (parameterizedType.getRawType() == UploadFilter.class) {
-					return (Class<? extends Upload>) parameterizedType.getActualTypeArguments()[0];
-				}
-			}
-		}
-		throw new RuntimeException("Attempted to load invalid filter!");
 	}
 
 	/**
@@ -926,13 +1079,17 @@ public class ScreenSnapper {
 		}
 		optionsOpen = true;
 
-		JFrame frame = new JFrame("Sleeksnap Settings");
+		final JFrame frame = new JFrame("Sleeksnap Settings");
 
-		OptionPanel panel = new OptionPanel(this);
-		panel.getUploaderPanel().setImageUploaders(uploaders.get(ImageUpload.class).values());
-		panel.getUploaderPanel().setTextUploaders(uploaders.get(TextUpload.class).values());
-		panel.getUploaderPanel().setURLUploaders(uploaders.get(URLUpload.class).values());
-		panel.getUploaderPanel().setFileUploaders(uploaders.get(FileUpload.class).values());
+		final OptionPanel panel = new OptionPanel(this);
+		panel.getUploaderPanel().setImageUploaders(
+				uploaders.get(ImageUpload.class).values());
+		panel.getUploaderPanel().setTextUploaders(
+				uploaders.get(TextUpload.class).values());
+		panel.getUploaderPanel().setURLUploaders(
+				uploaders.get(URLUpload.class).values());
+		panel.getUploaderPanel().setFileUploaders(
+				uploaders.get(FileUpload.class).values());
 		panel.setHistory(history);
 		panel.doneBuilding();
 
@@ -941,14 +1098,16 @@ public class ScreenSnapper {
 		frame.setVisible(true);
 		frame.setResizable(false);
 		try {
-			frame.setIconImage(ImageIO.read(Util.getResourceByName("/icon32x32.png")));
-		} catch (IOException e1) {
+			frame.setIconImage(ImageIO.read(Util
+					.getResourceByName("/icon32x32.png")));
+		} catch (final IOException e1) {
 			e1.printStackTrace();
 		}
 		Util.centerFrame(frame);
-		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		frame.addWindowListener(new WindowAdapter() {
-			public void windowClosed(WindowEvent e) {
+			@Override
+			public void windowClosed(final WindowEvent e) {
 				optionsOpen = false;
 				LogPanelHandler.unbind();
 			}
@@ -957,22 +1116,60 @@ public class ScreenSnapper {
 	}
 
 	/**
+	 * Prompt the user for a configuration reset
+	 */
+	public void promptConfigurationReset() {
+		final int option = JOptionPane.showConfirmDialog(null,
+				Language.getString("settingsCorrupted"),
+				Language.getString("errorLoadingSettings"),
+				JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+		if (option == JOptionPane.YES_OPTION) {
+			try {
+				loadSettings(true);
+			} catch (final Exception e) {
+				logger.log(Level.SEVERE, "Unable to load default settings!", e);
+			}
+		} else if (option == JOptionPane.NO_OPTION) {
+			// If no, let them set the configuration themselves..
+			openSettings();
+		} else if (option == JOptionPane.CANCEL_OPTION) {
+			// Exit, they don't want anything to do with it.
+			System.exit(0);
+		}
+	}
+
+	/**
+	 * Register an upload filter
+	 * 
+	 * @param filter
+	 *            The filter to register
+	 */
+	public void registerFilter(final UploadFilter<?> filter) {
+		final Class<? extends Upload> type = getFilterType(filter);
+		LinkedList<UploadFilter<?>> filterList = filters.get(type);
+		if (filterList == null) {
+			filters.put(type, filterList = new LinkedList<UploadFilter<?>>());
+		}
+		filterList.addFirst(filter);
+	}
+
+	/**
 	 * Register an uploader
 	 * 
 	 * @param uploader
 	 *            The uploader
 	 */
-	public void registerUploader(Uploader<?> uploader) {
+	public void registerUploader(final Uploader<?> uploader) {
 		if (uploader instanceof GenericUploader) {
-			GenericUploader u = (GenericUploader) uploader;
+			final GenericUploader u = (GenericUploader) uploader;
 			loadUploaderSettings(u);
-			for (Uploader<?> up : u.getSubUploaders()) {
+			for (final Uploader<?> up : u.getSubUploaders()) {
 				up.setParentUploader(u);
 				registerUploader(up);
 			}
 			return;
 		}
-		Class<? extends Upload> type = getUploaderType(uploader);
+		final Class<? extends Upload> type = getUploaderType(uploader);
 		// Check for the current list of types
 		if (!uploaders.containsKey(type)) {
 			uploaders.put(type, new HashMap<String, Uploader<?>>());
@@ -985,21 +1182,31 @@ public class ScreenSnapper {
 	}
 
 	/**
-	 * Attempt to get the upload type from the Superclass
-	 * 
-	 * @param uploader
-	 *            The uploader to get the type from
-	 * @return The type
+	 * Upload a file to the file service by selecting in another window
 	 */
-	@SuppressWarnings("unchecked")
-	public Class<? extends Upload> getUploaderType(Uploader<? extends Upload> uploader) {
-		// Find the uploader type
-		ParameterizedType parameterizedType = (ParameterizedType) uploader.getClass().getGenericSuperclass();
-		Type[] args = parameterizedType.getActualTypeArguments();
-		if (args.length == 0) {
-			throw new RuntimeException("Uploader does not include a valid type");
+	public void selectFile() {
+		final JFileChooser chooser = new JFileChooser();
+		chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		final int returnVal = chooser.showOpenDialog(null);
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			final File file = chooser.getSelectedFile();
+			final int confirm = JOptionPane.showConfirmDialog(null,
+					Language.getString("uploadConfirm", file.getName()),
+					Language.getString("uploadConfirmTitle"),
+					JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+			if (confirm == JOptionPane.YES_OPTION) {
+				JOptionPane.showMessageDialog(null,
+						Language.getString("fileUploading"),
+						Language.getString("fileUploadTitle"),
+						JOptionPane.INFORMATION_MESSAGE);
+				upload(new FileUpload(file.getAbsoluteFile()));
+			} else {
+				JOptionPane.showMessageDialog(null,
+						Language.getString("fileUploadCanceled"),
+						Language.getString("fileUploadTitle"),
+						JOptionPane.INFORMATION_MESSAGE);
+			}
 		}
-		return (Class<? extends Upload>) args[0];
 	}
 
 	/**
@@ -1010,14 +1217,17 @@ public class ScreenSnapper {
 	 * @param name
 	 *            The uploader name
 	 */
-	public void setDefaultUploader(final Class<? extends Upload> type, String name) {
+	public void setDefaultUploader(final Class<? extends Upload> type,
+			final String name) {
 		if (uploaders.containsKey(type)) {
-			Map<String, Uploader<? extends Upload>> map = uploaders.get(type);
+			final Map<String, Uploader<? extends Upload>> map = uploaders
+					.get(type);
 			if (map.containsKey(name)) {
-				Uploader<? extends Upload> uploader = map.get(name);
+				final Uploader<? extends Upload> uploader = map.get(name);
 				setDefaultUploader(uploader, false);
 			} else {
-				throw new RuntimeException("Invalid uploader " + name + "! Possible choices: " + map.values());
+				throw new RuntimeException("Invalid uploader " + name
+						+ "! Possible choices: " + map.values());
 			}
 		} else {
 			throw new RuntimeException("No uploaders set for " + type.getName());
@@ -1033,8 +1243,19 @@ public class ScreenSnapper {
 	 *            Whether to override the settings even if required fields
 	 *            aren't set
 	 */
-	public void setDefaultUploader(final Uploader<?> uploader, boolean settingsOverride) {
+	public void setDefaultUploader(final Uploader<?> uploader,
+			final boolean settingsOverride) {
 		uploaderAssociations.put(getUploaderType(uploader), uploader);
+	}
+
+	private void setUploaderSettings(final Uploader<?> uploader,
+			final JSONObject settings) {
+		if (uploader.hasSettings()) {
+			uploader.getSettings().setBaseObject(settings);
+		} else if (uploader.hasParent()
+				&& uploader.getParentUploader().hasSettings()) {
+			uploader.getParentUploader().getSettings().setBaseObject(settings);
+		}
 	}
 
 	/**
@@ -1043,18 +1264,31 @@ public class ScreenSnapper {
 	 * @param e
 	 *            The exception
 	 */
-	public void showException(Exception e) {
-		icon.displayMessage(Language.getString("error"), Language.getString("exceptionCause", e.getMessage()), MessageType.ERROR);
+	public void showException(final Exception e) {
+		icon.displayMessage(Language.getString("error"),
+				Language.getString("exceptionCause", e.getMessage()),
+				MessageType.ERROR);
 	}
-	
+
 	/**
 	 * Show a TrayIcon message for an exception
 	 * 
 	 * @param e
 	 *            The exception
 	 */
-	public void showException(Exception e, String errorMessage) {
-		icon.displayMessage(Language.getString("error"), Language.getString("exceptionCauseWithMessage", errorMessage, e.getMessage()), MessageType.ERROR);
+	public void showException(final Exception e, final String errorMessage) {
+		icon.displayMessage(
+				Language.getString("error"),
+				Language.getString("exceptionCauseWithMessage", errorMessage,
+						e.getMessage()), MessageType.ERROR);
+	}
+
+	/**
+	 * Clean up and shut down
+	 */
+	private void shutdown() {
+		uploadService.shutdown();
+		System.exit(0);
 	}
 
 	/**
@@ -1066,122 +1300,19 @@ public class ScreenSnapper {
 	public void upload(final Upload upload) {
 		// Check associations
 		if (!uploaderAssociations.containsKey(upload.getClass())) {
-			icon.displayMessage(Language.getString("noUploaderTitle"), Language.getString("noUploader", upload.getClass().getName()), TrayIcon.MessageType.ERROR);
+			icon.displayMessage(Language.getString("noUploaderTitle"), Language
+					.getString("noUploader", upload.getClass().getName()),
+					TrayIcon.MessageType.ERROR);
 			return;
 		}
 
 		uploadService.execute(new Runnable() {
+			@Override
 			public void run() {
 				icon.setImage(Resources.ICON_BUSY_IMAGE);
 				executeUpload(upload);
 				icon.setImage(Resources.ICON_IMAGE);
 			}
 		});
-	}
-
-	/**
-	 * Execute an upload
-	 * 
-	 * @param object
-	 *            The object to upload
-	 */
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public void executeUpload(Upload object) {
-		// Run the object through the filters
-		if (filters.containsKey(object.getClass())) {
-			for (UploadFilter filter : filters.get(object.getClass())) {
-				try {
-					object = filter.filter(object);
-				} catch (FilterException e) {
-					// FilterExceptions when thrown should interrupt the upload.
-					showException(e, e.getErrorMessage());
-					return;
-				}
-			}
-		}
-		// Then upload it
-		Uploader uploader = uploaderAssociations.get(object.getClass());
-		if (uploader != null) {
-			try {
-				String url = uploader.upload(object);
-				if (url != null) {
-					if (configuration.getBoolean("shortenurls")) {
-						Uploader shortener = uploaderAssociations.get(URL.class);
-						if (shortener != null) {
-							url = shortener.upload(new URLUpload(url));
-						}
-					}
-					if (object instanceof ImageUpload) {
-						if (configuration.getBoolean("savelocal") && !(uploader instanceof ImageLocalFileUploader)) {
-							FileOutputStream output = new FileOutputStream(getLocalFile(DateUtil.getCurrentDate() + ".png"));
-							try {
-								ImageIO.write(((ImageUpload) object).getImage(), "png", output);
-							} finally {
-								output.close();
-							}
-						}
-						((ImageUpload) object).getImage().flush();
-						((ImageUpload) object).setImage(null);
-					}
-					url = url.trim();
-
-					retries = 0;
-					
-					ClipboardUtil.setClipboard(url);
-
-					lastUrl = url;
-					history.addEntry(new HistoryEntry(url, uploader.getName()));
-					icon.displayMessage(Language.getString("uploadComplete"), Language.getString("uploadedTo", url), TrayIcon.MessageType.INFO);
-					logger.info("Upload completed, url: " + url);
-				} else {
-					icon.displayMessage(Language.getString("uploadFailed"), Language.getString("uploadFailedError"), TrayIcon.MessageType.ERROR);
-					logger.severe("Upload failed to execute due to an unknown error");
-				}
-			} catch (UploaderConfigurationException e) {
-				icon.displayMessage(Language.getString("uploaderConfigError"), Language.getString("uploaderConfigErrorMessage"), TrayIcon.MessageType.ERROR);
-				logger.log(Level.SEVERE, "Upload failed to execute", e);
-			} catch (Exception e) {
-				// Retry until retries > max
-				StringBuilder msg = new StringBuilder("The upload failed to execute: ");
-				msg.append(e.getMessage());
-				int max = configuration.getInteger("max_retries", Constants.Configuration.DEFAULT_MAX_RETRIES);
-				if(retries++ < max) {
-					logger.info("Retrying upload (" + retries + " of " + max + " retries)...");
-					msg.append("\nRetrying...");
-					upload(object);
-				} else {
-					msg.append("\nReached retry limit, upload aborted.");
-					logger.log(Level.SEVERE, "Upload failed to execute, retries: " + retries, e);
-					retries = 0;
-				}
-				icon.displayMessage(Language.getString("uploadFailed"), msg.toString(), TrayIcon.MessageType.ERROR);
-			}
-		}
-	}
-
-	/**
-	 * Get the local file for image archiving
-	 * 
-	 * @param fileName
-	 *            The file name
-	 * @return The constructed File object
-	 */
-	public File getLocalFile(String fileName) {
-		File dir = new File(Util.getWorkingDirectory(), "images");
-		if (!dir.exists()) {
-			dir.mkdirs();
-		}
-		return new File(dir, fileName);
-	}
-
-	/**
-	 * Check if we have an uploader for a type
-	 * 
-	 * @param class1
-	 *            The type to check
-	 * @return True, if we have an uploader
-	 */
-	public boolean hasUploaderFor(Class<? extends Object> class1) {
-		return uploaderAssociations.containsKey(class1);
 	}
 }

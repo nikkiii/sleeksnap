@@ -28,44 +28,45 @@ import com.sanityinc.jargs.CmdLineParser.OptionException;
  * A Program Options parser using Jargs
  * 
  * @author Nikki
- *
+ * 
  */
 public class ProgramOptions {
 
 	/**
 	 * Parse program arguments into a map
+	 * 
 	 * @param args
-	 * 			The arguments to prase
-	 * @return
-	 * 			The map of parsed arguments
+	 *            The arguments to prase
+	 * @return The map of parsed arguments
 	 */
-	public static Map<String, Object> parseSettings(String[] args) {
-		Map<String, Object> out = new HashMap<String, Object>();
-		
-		CmdLineParser parser = new CmdLineParser();
-		
-		Option<String> dir = parser.addStringOption('d', "dir");
-		Option<String> language = parser.addStringOption('l', "language");
-		Option<Boolean> resetConfig = parser.addBooleanOption("resetconfig");
-		
+	public static Map<String, Object> parseSettings(final String[] args) {
+		final Map<String, Object> out = new HashMap<String, Object>();
+
+		final CmdLineParser parser = new CmdLineParser();
+
+		final Option<String> dir = parser.addStringOption('d', "dir");
+		final Option<String> language = parser.addStringOption('l', "language");
+		final Option<Boolean> resetConfig = parser
+				.addBooleanOption("resetconfig");
+
 		try {
 			parser.parse(args);
-		} catch (OptionException e) {
+		} catch (final OptionException e) {
 			return out;
 		}
-		
-		if(dir.getOptionValue(parser) != null) {
+
+		if (dir.getOptionValue(parser) != null) {
 			out.put("dir", dir.getOptionValue(parser));
 		}
-		
-		if(language.getOptionValue(parser) != null) {
+
+		if (language.getOptionValue(parser) != null) {
 			out.put("language", dir.getOptionValue(parser));
 		}
-		
-		if(resetConfig.getOptionValue(parser, false)) {
+
+		if (resetConfig.getOptionValue(parser, false)) {
 			out.put("resetconfig", true);
 		}
-		
+
 		return out;
 	}
 }

@@ -27,26 +27,24 @@ import org.sleeksnap.uploaders.Uploader;
  * An uploader for the Paste2 pastebin.
  * 
  * @author Nikki
- *
+ * 
  */
 public class Paste2Uploader extends Uploader<TextUpload> {
-	
-	private static final String APIURL = "http://paste2.org/new-paste";
 
-	@Override
-	public String upload(TextUpload t) throws Exception {
-		RequestData data = new RequestData();
-		
-		data.put("code", t.getText())
-			.put("description", "")
-			.put("lang", "text")
-			.put("parent", "");
-		
-		return HttpUtil.executePost(APIURL, data, ResponseType.REDIRECT_URL);
-	}
+	private static final String APIURL = "http://paste2.org/new-paste";
 
 	@Override
 	public String getName() {
 		return "Paste2";
+	}
+
+	@Override
+	public String upload(final TextUpload t) throws Exception {
+		final RequestData data = new RequestData();
+
+		data.put("code", t.getText()).put("description", "")
+				.put("lang", "text").put("parent", "");
+
+		return HttpUtil.executePost(APIURL, data, ResponseType.REDIRECT_URL);
 	}
 }

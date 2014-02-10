@@ -36,6 +36,21 @@ public class GnomeWindowUtil implements WindowUtil {
 
 	private static Gtk gtk;
 
+	/**
+	 * Check whether this windowutil will be valid
+	 * 
+	 * @return True if the GTK library was loaded
+	 */
+	public static boolean isValid() {
+		try {
+			gtk = (Gtk) Native.loadLibrary("gtk-x11-2.0", Gtk.class);
+			return true;
+		} catch (final Exception e) {
+			// We return false later
+		}
+		return false;
+	}
+
 	@Override
 	public ActiveWindow getActiveWindow() throws Exception {
 		if (gtk == null) {
@@ -43,7 +58,7 @@ public class GnomeWindowUtil implements WindowUtil {
 		}
 		gtk.gtk_init(null, null);
 		// Display and window are pointers...
-		NativeLong display = gtk.gdk_screen_get_default();
+		final NativeLong display = gtk.gdk_screen_get_default();
 		if (display == null) {
 			throw new Exception("Unable to find the default screen");
 		}
@@ -59,25 +74,10 @@ public class GnomeWindowUtil implements WindowUtil {
 		}
 		// Get the frame bounds as a GdkRectangle, why not a structure since
 		// we'd get it in an int[] the other way
-		GdkRectangle rect = new GdkRectangle();
+		final GdkRectangle rect = new GdkRectangle();
 		gtk.gdk_window_get_frame_extents(window, rect);
 		// We won't know the name, but it's not implemented in anything so no
 		// big deal
 		return new ActiveWindow(null, rect.toRectangle());
-	}
-
-	/**
-	 * Check whether this windowutil will be valid
-	 * 
-	 * @return True if the GTK library was loaded
-	 */
-	public static boolean isValid() {
-		try {
-			gtk = (Gtk) Native.loadLibrary("gtk-x11-2.0", Gtk.class);
-			return true;
-		} catch (Exception e) {
-			// We return false later
-		}
-		return false;
 	}
 }

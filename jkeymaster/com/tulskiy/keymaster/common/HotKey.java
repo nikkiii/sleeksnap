@@ -20,63 +20,66 @@ package com.tulskiy.keymaster.common;
 import javax.swing.KeyStroke;
 
 /**
- * Internal representation of a hotkey. Either keyStroke or mediaKey should be set.
+ * Internal representation of a hotkey. Either keyStroke or mediaKey should be
+ * set.
  * <p/>
- * Author: Denis Tulskiy
- * Date: 6/20/11
+ * Author: Denis Tulskiy Date: 6/20/11
  */
 public class HotKey {
-    private KeyStroke keyStroke;
-    private MediaKey mediaKey;
-    private HotKeyListener listener;
+	private KeyStroke keyStroke;
+	private HotKeyListener listener;
+	private MediaKey mediaKey;
 
-    public HotKey(KeyStroke keyStroke, HotKeyListener listener) {
-        this.keyStroke = keyStroke;
-        this.listener = listener;
-    }
-
-    public HotKey(MediaKey mediaKey, HotKeyListener listener) {
-        this.mediaKey = mediaKey;
-        this.listener = listener;
-    }
-
-    public boolean isMedia() {
-        return mediaKey != null;
-    }
-    
-    public KeyStroke getKeyStroke() {
-		return keyStroke;
-	}
-
-	public void setKeyStroke(KeyStroke keyStroke) {
+	public HotKey(final KeyStroke keyStroke, final HotKeyListener listener) {
 		this.keyStroke = keyStroke;
+		this.listener = listener;
 	}
 
-	public MediaKey getMediaKey() {
-		return mediaKey;
-	}
-
-	public void setMediaKey(MediaKey mediaKey) {
+	public HotKey(final MediaKey mediaKey, final HotKeyListener listener) {
 		this.mediaKey = mediaKey;
+		this.listener = listener;
+	}
+
+	public KeyStroke getKeyStroke() {
+		return keyStroke;
 	}
 
 	public HotKeyListener getListener() {
 		return listener;
 	}
 
-	public void setListener(HotKeyListener listener) {
-    	this.listener = listener;
-    }
+	public MediaKey getMediaKey() {
+		return mediaKey;
+	}
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("HotKey");
-        if (keyStroke != null)
-            sb.append("{").append(keyStroke.toString().replaceAll("pressed ", ""));
-        if (mediaKey != null)
-            sb.append("{").append(mediaKey);
-        sb.append('}');
-        return sb.toString();
-    }
+	public boolean isMedia() {
+		return mediaKey != null;
+	}
+
+	public void setKeyStroke(final KeyStroke keyStroke) {
+		this.keyStroke = keyStroke;
+	}
+
+	public void setListener(final HotKeyListener listener) {
+		this.listener = listener;
+	}
+
+	public void setMediaKey(final MediaKey mediaKey) {
+		this.mediaKey = mediaKey;
+	}
+
+	@Override
+	public String toString() {
+		final StringBuilder sb = new StringBuilder();
+		sb.append("HotKey");
+		if (keyStroke != null) {
+			sb.append("{").append(
+					keyStroke.toString().replaceAll("pressed ", ""));
+		}
+		if (mediaKey != null) {
+			sb.append("{").append(mediaKey);
+		}
+		sb.append('}');
+		return sb.toString();
+	}
 }

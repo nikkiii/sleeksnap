@@ -47,18 +47,34 @@ import com.sun.jna.Platform;
 @SuppressWarnings({ "serial" })
 public class InfoPanel extends OptionSubPanel {
 
-	private JLabel versionLabel;
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7679046915973221229L;
+	private JCheckBox compressImages;
 	private JLabel logoLabel;
 
-	private JCheckBox startOnStartup;
-	private JCheckBox compressImages;
+	private final OptionPanel parent;
 	private JButton saveAllButton;
-
-	private OptionPanel parent;
 	private JCheckBox showIconCheckbox;
 
-	public InfoPanel(OptionPanel parent) {
+	private JCheckBox startOnStartup;
+	private JLabel versionLabel;
+
+	public InfoPanel(final OptionPanel parent) {
 		this.parent = parent;
+	}
+
+	@Override
+	public void doneBuilding() {
+		if (parent.getConfiguration().contains("startOnStartup")) {
+			startOnStartup.setSelected(parent.getConfiguration().getBoolean(
+					"startOnStartup"));
+		}
+		if (parent.getConfiguration().contains("compressImages")) {
+			compressImages.setSelected(parent.getConfiguration().getBoolean(
+					"compressImages"));
+		}
 	}
 
 	@Override
@@ -70,7 +86,7 @@ public class InfoPanel extends OptionSubPanel {
 		showIconCheckbox = new JCheckBox();
 		saveAllButton = new JButton();
 
-		this.setPreferredSize(new java.awt.Dimension(300, 442));
+		setPreferredSize(new java.awt.Dimension(300, 442));
 
 		logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
 		logoLabel.setIcon(new ImageIcon(Util
@@ -78,44 +94,52 @@ public class InfoPanel extends OptionSubPanel {
 
 		versionLabel.setText("Version " + Constants.Version.getVersionString());
 
-		startOnStartup.setText("Start Sleeksnap on startup (Windows and Linux only)");
-		compressImages.setText("Compress images with pngout/pngcrush (Requires binaries)");
+		startOnStartup
+				.setText("Start Sleeksnap on startup (Windows and Linux only)");
+		compressImages
+				.setText("Compress images with pngout/pngcrush (Requires binaries)");
 		showIconCheckbox.setText("Show icon in system tray");
-		
+
 		startOnStartup.setEnabled(Platform.isWindows() || Platform.isX11());
-		
+
 		showIconCheckbox.setSelected(true);
 
 		saveAllButton.setText("Save all");
 
 		saveAllButton.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {
-				boolean start = startOnStartup.isSelected();
+			public void actionPerformed(final ActionEvent e) {
+				final boolean start = startOnStartup.isSelected();
 				if (start) {
 					// Overwrite the old key, in case it's a new version.
 					if (Platform.isWindows() || Platform.isX11()) {
 						try {
-							Updater.verifyAutostart(FileUtils.getJarFile(OptionPanel.class), VerificationMode.INSERT);
-						} catch (Exception e1) {
+							Updater.verifyAutostart(
+									FileUtils.getJarFile(OptionPanel.class),
+									VerificationMode.INSERT);
+						} catch (final Exception e1) {
 							e1.printStackTrace();
 						}
 					}
 				} else {
 					if (Platform.isWindows() || Platform.isX11()) {
 						try {
-							Updater.verifyAutostart(FileUtils.getJarFile(OptionPanel.class), VerificationMode.REMOVE);
-						} catch (Exception e1) {
+							Updater.verifyAutostart(
+									FileUtils.getJarFile(OptionPanel.class),
+									VerificationMode.REMOVE);
+						} catch (final Exception e1) {
 							e1.printStackTrace();
 						}
 					}
 				}
 				parent.getConfiguration().put("startOnStartup", start);
-				parent.getConfiguration().put("compressImages", compressImages.isSelected());
-				parent.getConfiguration().put("showIcon", showIconCheckbox.isSelected());
+				parent.getConfiguration().put("compressImages",
+						compressImages.isSelected());
+				parent.getConfiguration().put("showIcon",
+						showIconCheckbox.isSelected());
 				try {
 					parent.getConfiguration().save();
-				} catch (IOException e1) {
+				} catch (final IOException e1) {
 					e1.printStackTrace();
 				}
 				parent.saveAll();
@@ -123,53 +147,74 @@ public class InfoPanel extends OptionSubPanel {
 			}
 		});
 
-		GroupLayout mainPanelLayout = new GroupLayout(
-				this);
-		this.setLayout(mainPanelLayout);
-        mainPanelLayout.setHorizontalGroup(
-                mainPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                .addGroup(mainPanelLayout.createSequentialGroup()
-                    .addGroup(mainPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addGroup(mainPanelLayout.createSequentialGroup()
-                            .addContainerGap()
-                            .addGroup(mainPanelLayout.createParallelGroup(GroupLayout.Alignment.TRAILING)
-                                .addComponent(versionLabel)
-                                .addGroup(mainPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                                    .addComponent(startOnStartup)
-                                    .addComponent(logoLabel)
-                                    .addComponent(compressImages)
-                                    .addComponent(showIconCheckbox))))
-                        .addGroup(GroupLayout.Alignment.TRAILING, mainPanelLayout.createSequentialGroup()
-                            .addContainerGap(368, Short.MAX_VALUE)
-                            .addComponent(saveAllButton)))
-                    .addContainerGap())
-            );
-            mainPanelLayout.setVerticalGroup(
-                mainPanelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                .addGroup(mainPanelLayout.createSequentialGroup()
-                    .addContainerGap()
-                    .addComponent(logoLabel)
-                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                    .addComponent(versionLabel)
-                    .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                    .addComponent(startOnStartup)
-                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                    .addComponent(compressImages)
-                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                    .addComponent(showIconCheckbox)
-                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 224, Short.MAX_VALUE)
-                    .addComponent(saveAllButton)
-                    .addContainerGap())
-            );
-	}
-
-	public void doneBuilding() {
-		if (parent.getConfiguration().contains("startOnStartup")) {
-			startOnStartup.setSelected(parent.getConfiguration().getBoolean(
-					"startOnStartup"));
-		}
-		if (parent.getConfiguration().contains("compressImages")) {
-			compressImages.setSelected(parent.getConfiguration().getBoolean("compressImages"));
-		}
+		final GroupLayout mainPanelLayout = new GroupLayout(this);
+		setLayout(mainPanelLayout);
+		mainPanelLayout
+				.setHorizontalGroup(mainPanelLayout
+						.createParallelGroup(GroupLayout.Alignment.LEADING)
+						.addGroup(
+								mainPanelLayout
+										.createSequentialGroup()
+										.addGroup(
+												mainPanelLayout
+														.createParallelGroup(
+																GroupLayout.Alignment.LEADING)
+														.addGroup(
+																mainPanelLayout
+																		.createSequentialGroup()
+																		.addContainerGap()
+																		.addGroup(
+																				mainPanelLayout
+																						.createParallelGroup(
+																								GroupLayout.Alignment.TRAILING)
+																						.addComponent(
+																								versionLabel)
+																						.addGroup(
+																								mainPanelLayout
+																										.createParallelGroup(
+																												GroupLayout.Alignment.LEADING)
+																										.addComponent(
+																												startOnStartup)
+																										.addComponent(
+																												logoLabel)
+																										.addComponent(
+																												compressImages)
+																										.addComponent(
+																												showIconCheckbox))))
+														.addGroup(
+																GroupLayout.Alignment.TRAILING,
+																mainPanelLayout
+																		.createSequentialGroup()
+																		.addContainerGap(
+																				368,
+																				Short.MAX_VALUE)
+																		.addComponent(
+																				saveAllButton)))
+										.addContainerGap()));
+		mainPanelLayout
+				.setVerticalGroup(mainPanelLayout
+						.createParallelGroup(GroupLayout.Alignment.LEADING)
+						.addGroup(
+								mainPanelLayout
+										.createSequentialGroup()
+										.addContainerGap()
+										.addComponent(logoLabel)
+										.addPreferredGap(
+												LayoutStyle.ComponentPlacement.RELATED)
+										.addComponent(versionLabel)
+										.addPreferredGap(
+												LayoutStyle.ComponentPlacement.UNRELATED)
+										.addComponent(startOnStartup)
+										.addPreferredGap(
+												LayoutStyle.ComponentPlacement.RELATED)
+										.addComponent(compressImages)
+										.addPreferredGap(
+												LayoutStyle.ComponentPlacement.RELATED)
+										.addComponent(showIconCheckbox)
+										.addPreferredGap(
+												LayoutStyle.ComponentPlacement.RELATED,
+												224, Short.MAX_VALUE)
+										.addComponent(saveAllButton)
+										.addContainerGap()));
 	}
 }

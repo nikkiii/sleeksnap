@@ -79,18 +79,18 @@ public class Win32WindowUtil implements WindowUtil {
 	public ActiveWindow getActiveWindow() throws Exception {
 		// Get the foreground window as a NativeLong pointer (Doesn't need the
 		// jna platform binary)
-		NativeLong pointer = GetForegroundWindow();
+		final NativeLong pointer = GetForegroundWindow();
 		// If it's null, throw an exception
 		if (pointer == null) {
 			throw new Exception("Unable to find active window");
 		}
 		// Initialize a new array for window title
-		byte[] nameBytes = new byte[1024];
+		final byte[] nameBytes = new byte[1024];
 		// Perform the native GetWindowText function
 		GetWindowTextA(pointer, nameBytes, nameBytes.length);
 		// Get the window size (indexes: 0 = left, 1 = top, 2 = right, 3 =
 		// bottom)
-		int[] rect = new int[4];
+		final int[] rect = new int[4];
 		GetWindowRect(pointer, rect);
 		// Check if fullscreen (We should shave off part of the sides if it is)
 		if (rect[0] < 0) {

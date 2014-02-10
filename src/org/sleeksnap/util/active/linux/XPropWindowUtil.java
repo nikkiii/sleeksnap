@@ -38,12 +38,6 @@ import org.sleeksnap.util.active.WindowUtil;
 public class XPropWindowUtil implements WindowUtil {
 
 	/**
-	 * The pattern to match width/height variables
-	 */
-	private static Pattern pattern = Pattern
-			.compile("Width:\\s*(\\d+)\\s*Height:\\s*(\\d+)");
-
-	/**
 	 * The pattern to match the window location (Does not include title bar)
 	 */
 	private static Pattern locationPattern = Pattern
@@ -56,42 +50,16 @@ public class XPropWindowUtil implements WindowUtil {
 			.compile("xwininfo\\: Window id\\: .*? \"(.*?)\"");
 
 	/**
+	 * The pattern to match width/height variables
+	 */
+	private static Pattern pattern = Pattern
+			.compile("Width:\\s*(\\d+)\\s*Height:\\s*(\\d+)");
+
+	/**
 	 * The pattern to match the window id from the xprop -root command
 	 */
 	private static Pattern windowid = Pattern
 			.compile("_NET_ACTIVE_WINDOW\\(WINDOW\\): window id # (.*)");
-
-	@Override
-	public ActiveWindow getActiveWindow() throws Exception {
-		String id = runProcess("xprop -root");
-		Matcher matcher = windowid.matcher(id);
-		if (!matcher.find()) {
-			throw new Exception("Xprop did not supply the information needed!");
-		}
-		System.out.println("Window id: " + matcher.group(1));
-		id = matcher.group(1);
-		String resp = runProcess("xwininfo -id " + id);
-		System.out.println(resp);
-		matcher = namePattern.matcher(resp);
-		if (!matcher.find()) {
-			throw new Exception("XWinInfo did not provide a name!");
-		}
-		String name = matcher.group(1);
-		matcher = locationPattern.matcher(resp);
-		if (!matcher.find()) {
-			throw new Exception("XWinInfo did not provide location info!");
-		}
-		int x = Integer.parseInt(matcher.group(1));
-		int y = Integer.parseInt(matcher.group(2));
-		matcher = pattern.matcher(resp);
-		if (!matcher.find()) {
-			throw new Exception("XWinInfo did not provide size info!");
-		}
-		int width = Integer.parseInt(matcher.group(1));
-		int height = Integer.parseInt(matcher.group(2));
-		// Return a new ActiveWindow object
-		return new ActiveWindow(name, new Rectangle(x, y, width, height));
-	}
 
 	/**
 	 * Execute a command and get the response
@@ -104,14 +72,46 @@ public class XPropWindowUtil implements WindowUtil {
 	 * @throws InterruptedException
 	 *             If the process is interrupted while waiting
 	 */
-	public static String runProcess(String cmdline) throws IOException,
+	public static String runProcess(final String cmdline) throws IOException,
 			InterruptedException {
-		Process p = Runtime.getRuntime().exec(cmdline);
+		final Process p = Runtime.getRuntime().exec(cmdline);
 		p.waitFor();
 		try {
 			return StreamUtils.readContents(p.getInputStream());
 		} finally {
 			p.destroy();
 		}
+	}
+
+	@Override
+	public ActiveWindow getActiveWindow() throws Exception {
+		String id = runProcess("xprop -root");
+		Matcher matcher = windowid.matcher(id);
+		if (!matcher.find()) {
+			throw new Exception("Xprop did not supply the information needed!");
+		}
+		System.out.println("Window id: " + matcher.group(1));
+		id = matcher.group(1);
+		final String resp = runProcess("xwininfo -id " + id);
+		System.out.println(resp);
+		matcher = namePattern.matcher(resp);
+		if (!matcher.find()) {
+			throw new Exception("XWinInfo did not provide a name!");
+		}
+		final String name = matcher.group(1);
+		matcher = locationPattern.matcher(resp);
+		if (!matcher.find()) {
+			throw new Exception("XWinInfo did not provide location info!");
+		}
+		final int x = Integer.parseInt(matcher.group(1));
+		final int y = Integer.parseInt(matcher.group(2));
+		matcher = pattern.matcher(resp);
+		if (!matcher.find()) {
+			throw new Exception("XWinInfo did not provide size info!");
+		}
+		final int width = Integer.parseInt(matcher.group(1));
+		final int height = Integer.parseInt(matcher.group(2));
+		// Return a new ActiveWindow object
+		return new ActiveWindow(name, new Rectangle(x, y, width, height));
 	}
 }

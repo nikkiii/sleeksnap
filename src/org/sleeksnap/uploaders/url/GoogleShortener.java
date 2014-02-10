@@ -46,31 +46,32 @@ public class GoogleShortener extends Uploader<URLUpload> {
 	}
 
 	@Override
-	public String upload(URLUpload url) throws Exception {
-		//Sanity check, otherwise google's api returns a 400
-		if(url.toString().matches("http://goo.gl/[a-zA-Z0-9]{1,10}")) {
+	public String upload(final URLUpload url) throws Exception {
+		// Sanity check, otherwise google's api returns a 400
+		if (url.toString().matches("http://goo.gl/[a-zA-Z0-9]{1,10}")) {
 			return url.toString();
 		}
-		
-		URLConnection connection = new URL(PAGE_URL).openConnection();
+
+		final URLConnection connection = new URL(PAGE_URL).openConnection();
 		connection.setDoOutput(true);
 		connection.setRequestProperty("Content-type", "application/json");
-		
-		JSONObject out = new JSONObject();
-		
+
+		final JSONObject out = new JSONObject();
+
 		out.put("longUrl", url.getURL());
-		
-		OutputStreamWriter writer = new OutputStreamWriter(
+
+		final OutputStreamWriter writer = new OutputStreamWriter(
 				connection.getOutputStream());
 		writer.write(out.toString());
 		writer.flush();
 		writer.close();
 
-		String contents = StreamUtils.readContents(connection.getInputStream());
-		
-		JSONObject resp = new JSONObject(contents);
-		
-		if(resp.has("id")) {
+		final String contents = StreamUtils.readContents(connection
+				.getInputStream());
+
+		final JSONObject resp = new JSONObject(contents);
+
+		if (resp.has("id")) {
 			return resp.getString("id");
 		} else {
 			throw new UploadException("Unable to find short url");

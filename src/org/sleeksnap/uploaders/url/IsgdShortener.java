@@ -37,22 +37,22 @@ public class IsgdShortener extends Uploader<URLUpload> {
 	private static final String PAGE_URL = "http://is.gd/api.php";
 
 	@Override
-	public String upload(URLUpload url) throws Exception {
-		RequestData data = new RequestData();
-		
-		data.put("longurl", url.getURL());
-		
-		String contents = HttpUtil.executeGet(PAGE_URL, data);
-		
-		if(contents.startsWith("http")) {
-			return contents;
-		}
-		
-		throw new UploadException("Unexpected response from server.");
+	public String getName() {
+		return "is.gd";
 	}
 
 	@Override
-	public String getName() {
-		return "is.gd";
+	public String upload(final URLUpload url) throws Exception {
+		final RequestData data = new RequestData();
+
+		data.put("longurl", url.getURL());
+
+		final String contents = HttpUtil.executeGet(PAGE_URL, data);
+
+		if (contents.startsWith("http")) {
+			return contents;
+		}
+
+		throw new UploadException("Unexpected response from server.");
 	}
 }

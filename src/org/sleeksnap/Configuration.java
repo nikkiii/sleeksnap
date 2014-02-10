@@ -29,14 +29,14 @@ import org.json.JSONTokener;
 public class Configuration {
 
 	/**
-	 * The file which we loaded from
-	 */
-	private File file;
-
-	/**
 	 * The configuration map
 	 */
 	private JSONObject config = new JSONObject();
+
+	/**
+	 * The file which we loaded from
+	 */
+	private File file;
 
 	/**
 	 * Empty constructor
@@ -46,15 +46,26 @@ public class Configuration {
 	}
 
 	/**
+	 * Check whether the configuration map contains a string
+	 * 
+	 * @param string
+	 *            The string
+	 * @return Whether it contains the string or not
+	 */
+	public boolean contains(final String string) {
+		return config.has(string);
+	}
+
+	/**
 	 * Get a generic object, auto casting
 	 * 
 	 * @param key
 	 *            The key
 	 * @return The result
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T get(String key) {
+	public <T> T get(final String key) {
 		return (T) config.get(key);
 	}
 
@@ -64,10 +75,18 @@ public class Configuration {
 	 * @param key
 	 *            The key
 	 * @return The result
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
-	public boolean getBoolean(String key) {
+	public boolean getBoolean(final String key) {
 		return config.getBoolean(key);
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T> T getEnumValue(final String key, final Class<?> class1) {
+		if (class1.isEnum()) {
+			return (T) class1.getEnumConstants()[getInteger(key)];
+		}
+		return null;
 	}
 
 	/**
@@ -76,9 +95,9 @@ public class Configuration {
 	 * @param key
 	 *            The key
 	 * @return The integer
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
-	public int getInteger(String key) {
+	public int getInteger(final String key) {
 		return config.getInt(key);
 	}
 
@@ -88,9 +107,9 @@ public class Configuration {
 	 * @param key
 	 *            The key
 	 * @return The integer
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
-	public int getInteger(String key, int def) {
+	public int getInteger(final String key, final int def) {
 		return config.getInt(key, def);
 	}
 
@@ -100,9 +119,9 @@ public class Configuration {
 	 * @param key
 	 *            The key
 	 * @return The map attached to the specified key
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
-	public JSONObject getJSONObject(String key) {
+	public JSONObject getJSONObject(final String key) {
 		return config.getJSONObject(key);
 	}
 
@@ -112,9 +131,9 @@ public class Configuration {
 	 * @param key
 	 *            The key
 	 * @return The object
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
-	public Object getObject(String key) {
+	public Object getObject(final String key) {
 		return config.get(key);
 	}
 
@@ -124,10 +143,14 @@ public class Configuration {
 	 * @param key
 	 *            The key
 	 * @return The string containing the setting for the key.
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
-	public String getString(String key) {
+	public String getString(final String key) {
 		return config.getString(key);
+	}
+
+	public String getString(final String key, final String defaultValue) {
+		return config.getString(key, defaultValue);
 	}
 
 	/**
@@ -137,29 +160,20 @@ public class Configuration {
 	 *            The file
 	 * @throws IOException
 	 *             If an error occurred while loading
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
-	public void load(File file) throws IOException {
+	public void load(final File file) throws IOException {
 		this.file = file;
 		try {
-			FileInputStream fInput = new FileInputStream(file);
+			final FileInputStream fInput = new FileInputStream(file);
 			try {
-				this.config = new JSONObject(new JSONTokener(fInput));
+				config = new JSONObject(new JSONTokener(fInput));
 			} finally {
 				fInput.close();
 			}
-		} catch(RuntimeException e) {
+		} catch (final RuntimeException e) {
 			throw new IOException(e);
 		}
-	}
-	
-	/**
-	 * Set the configuration file path
-	 * @param file
-	 * 			The file
-	 */
-	public void setFile(File file) {
-		this.file = file;
 	}
 
 	/**
@@ -167,12 +181,12 @@ public class Configuration {
 	 * 
 	 * @param contents
 	 *            The JSON contents
-	 * @throws IOException 
+	 * @throws IOException
 	 */
-	public void load(String contents) throws IOException {
+	public void load(final String contents) throws IOException {
 		try {
-			this.config = new JSONObject(contents);
-		} catch(RuntimeException e) {
+			config = new JSONObject(contents);
+		} catch (final RuntimeException e) {
 			throw new IOException(e);
 		}
 	}
@@ -184,9 +198,9 @@ public class Configuration {
 	 *            The key
 	 * @param value
 	 *            The value
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
-	public void put(String key, Object value) {
+	public void put(final String key, final Object value) {
 		config.put(key, value);
 	}
 
@@ -200,7 +214,7 @@ public class Configuration {
 		if (file == null) {
 			throw new IOException("File not set! Cannot save to file");
 		}
-		FileWriter writer = new FileWriter(file);
+		final FileWriter writer = new FileWriter(file);
 		try {
 			writer.write(config.toString(4));
 		} finally {
@@ -209,25 +223,12 @@ public class Configuration {
 	}
 
 	/**
-	 * Check whether the configuration map contains a string
+	 * Set the configuration file path
 	 * 
-	 * @param string
-	 *            The string
-	 * @return Whether it contains the string or not
+	 * @param file
+	 *            The file
 	 */
-	public boolean contains(String string) {
-		return config.has(string);
-	}
-
-	@SuppressWarnings("unchecked")
-	public <T> T getEnumValue(String key, Class<?> class1) {
-		if(class1.isEnum()) {
-			return (T) class1.getEnumConstants()[getInteger(key)];
-		}
-		return null;
-	}
-
-	public String getString(String key, String defaultValue) {
-		return config.getString(key, defaultValue);
+	public void setFile(final File file) {
+		this.file = file;
 	}
 }

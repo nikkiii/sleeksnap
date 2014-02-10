@@ -43,32 +43,122 @@ import com.sun.jna.Platform;
  */
 @SuppressWarnings({ "serial" })
 public class HotkeyPanel extends OptionSubPanel {
-	private OptionPanel parent;
+	public class HotkeyChangeListener extends KeyAdapter {
+		private final JButton button;
 
-	private Configuration configuration;
+		public HotkeyChangeListener(final JButton button) {
+			this.button = button;
+		}
 
-	private JLabel fullscreenLabel;
-	private JLabel hotkeySettingsLabel;
-	private JLabel cropLabel;
-	private JLabel clipboardLabel;
-	private JLabel activeLabel;
-	private JLabel noteLabel;
-	private JLabel optionsLabel;
-	private JLabel fileLabel;
+		@Override
+		public void keyPressed(final KeyEvent e) {
+			// If the key is unknown/a function key
+			if (e.getKeyCode() == 0 || e.getKeyCode() == KeyEvent.VK_ALT
+					|| e.getKeyCode() == KeyEvent.VK_CONTROL
+					|| e.getKeyCode() == KeyEvent.VK_SHIFT
+					|| e.getKeyCode() == KeyEvent.VK_META) {
+				return;
+			}
+			// Consume any keys that may cause tab changes/other undesired
+			// behavior
+			e.consume();
+		}
 
-	private JButton fullHotkeyButton;
-	private JButton cropHotkeyButton;
-	private JButton clipboardHotkeyButton;
+		@Override
+		public void keyReleased(final KeyEvent e) {
+			if (parent.getSnapper().getKeyManager().hasKeysBound()) {
+				parent.getSnapper().getKeyManager().resetKeys();
+			}
+			// If the key is unknown/a function key
+			if (e.getKeyCode() == 0 || e.getKeyCode() == KeyEvent.VK_ALT
+					|| e.getKeyCode() == KeyEvent.VK_CONTROL
+					|| e.getKeyCode() == KeyEvent.VK_SHIFT
+					|| e.getKeyCode() == KeyEvent.VK_META) {
+				return;
+			}
+			button.setText(formatKeyStroke(KeyStroke.getKeyStrokeForEvent(e)));
+			if (!hotkeyResetButton.isEnabled()) {
+				hotkeyResetButton.setEnabled(true);
+			}
+			if (!hotkeySaveButton.isEnabled()) {
+				hotkeySaveButton.setEnabled(true);
+			}
+		}
+	}
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -3359859493039178326L;
+
+	public static String formatKeyStroke(final KeyStroke stroke) {
+		if (stroke == null) {
+			return Language.getString("hotkeyNotSet");
+		}
+		String s = stroke.toString();
+		s = s.replace("released ", "");
+		s = s.replace("typed ", "");
+		s = s.replace("pressed ", "");
+		final StringBuilder out = new StringBuilder();
+		final String[] split = s.split(" ");
+		for (int i = 0; i < split.length; i++) {
+			String str = split[i];
+			if (str.contains("_")) {
+				str = str.replace('_', ' ');
+			}
+			out.append(Util.ucwords(str));
+			if (i != (split.length - 1)) {
+				out.append(" + ");
+			}
+		}
+		return out.toString();
+	}
+
+	public static String getFormattedKeyStroke(final String s) {
+		final String[] split = s.split(" \\+ ");
+		final StringBuilder out = new StringBuilder();
+		for (int i = 0; i < split.length; i++) {
+			if (i == (split.length - 1)) {
+				out.append(split[i].toUpperCase().replace(' ', '_'));
+			} else {
+				out.append(split[i].toLowerCase());
+				out.append(" ");
+			}
+		}
+		return out.toString();
+	}
+
 	private JButton activeHotkeyButton;
-	private JButton fileHotkeyButton;
-	private JButton optionsHotkeyButton;
+	private JLabel activeLabel;
+	private JButton clipboardHotkeyButton;
+	private JLabel clipboardLabel;
+	private final Configuration configuration;
+	private JButton cropHotkeyButton;
+	private JLabel cropLabel;
 
+	private JButton fileHotkeyButton;
+	private JLabel fileLabel;
+	private JButton fullHotkeyButton;
+	private JLabel fullscreenLabel;
 	private JButton hotkeyResetButton;
 	private JButton hotkeySaveButton;
 
-	public HotkeyPanel(OptionPanel parent) {
+	private JLabel hotkeySettingsLabel;
+	private JLabel noteLabel;
+
+	private JButton optionsHotkeyButton;
+
+	private JLabel optionsLabel;
+
+	private final OptionPanel parent;
+
+	public HotkeyPanel(final OptionPanel parent) {
 		this.parent = parent;
-		this.configuration = parent.getSnapper().getConfiguration();
+		configuration = parent.getSnapper().getConfiguration();
+	}
+
+	private String getButtonText(final String stroke) {
+		return formatKeyStroke(KeyStroke.getKeyStroke(stroke));
 	}
 
 	@Override
@@ -92,50 +182,58 @@ public class HotkeyPanel extends OptionSubPanel {
 		hotkeyResetButton = new JButton();
 		hotkeySaveButton = new JButton();
 
-		hotkeySettingsLabel.setText("Hotkey settings (click the button to change)");
+		hotkeySettingsLabel
+				.setText("Hotkey settings (click the button to change)");
 
 		fullscreenLabel.setText("Fullscreen shot:");
 
 		fullHotkeyButton.setText(Language.getString("hotkeyNotSet"));
 
-		fullHotkeyButton.addKeyListener(new HotkeyChangeListener(fullHotkeyButton));
+		fullHotkeyButton.addKeyListener(new HotkeyChangeListener(
+				fullHotkeyButton));
 
 		cropLabel.setText("Crop shot:");
 
 		cropHotkeyButton.setText(Language.getString("hotkeyNotSet"));
 
-		cropHotkeyButton.addKeyListener(new HotkeyChangeListener(cropHotkeyButton));
+		cropHotkeyButton.addKeyListener(new HotkeyChangeListener(
+				cropHotkeyButton));
 
 		clipboardLabel.setText("Clipboard upload:");
 
 		clipboardHotkeyButton.setText(Language.getString("hotkeyNotSet"));
 
-		clipboardHotkeyButton.addKeyListener(new HotkeyChangeListener(clipboardHotkeyButton));
+		clipboardHotkeyButton.addKeyListener(new HotkeyChangeListener(
+				clipboardHotkeyButton));
 
 		fileLabel.setText("File upload:");
 
 		fileHotkeyButton.setText(Language.getString("hotkeyNotSet"));
-		fileHotkeyButton.addKeyListener(new HotkeyChangeListener(fileHotkeyButton));
+		fileHotkeyButton.addKeyListener(new HotkeyChangeListener(
+				fileHotkeyButton));
 
 		activeLabel.setText("Active window:");
 
 		activeHotkeyButton.setText(Language.getString("hotkeyNotSet"));
 
-		activeHotkeyButton.addKeyListener(new HotkeyChangeListener(activeHotkeyButton));
+		activeHotkeyButton.addKeyListener(new HotkeyChangeListener(
+				activeHotkeyButton));
 
 		optionsLabel.setText("Open settings:");
 
 		optionsHotkeyButton.setText(Language.getString("hotkeyNotSet"));
 
-		optionsHotkeyButton.addKeyListener(new HotkeyChangeListener(optionsHotkeyButton));
+		optionsHotkeyButton.addKeyListener(new HotkeyChangeListener(
+				optionsHotkeyButton));
 
-		noteLabel.setText("Note: All hotkeys are temporarily disabled when you click a button");
+		noteLabel
+				.setText("Note: All hotkeys are temporarily disabled when you click a button");
 
 		hotkeyResetButton.setText("Reset");
 
 		hotkeyResetButton.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(final ActionEvent e) {
 				loadCurrentHotkeys();
 				hotkeySaveButton.setEnabled(false);
 				hotkeyResetButton.setEnabled(false);
@@ -146,7 +244,7 @@ public class HotkeyPanel extends OptionSubPanel {
 
 		hotkeySaveButton.addActionListener(new ActionListener() {
 			@Override
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(final ActionEvent e) {
 				savePreferences();
 			}
 		});
@@ -154,9 +252,9 @@ public class HotkeyPanel extends OptionSubPanel {
 		hotkeyResetButton.setEnabled(false);
 		hotkeySaveButton.setEnabled(false);
 
-		javax.swing.GroupLayout hotkeyPanelLayout = new javax.swing.GroupLayout(
+		final javax.swing.GroupLayout hotkeyPanelLayout = new javax.swing.GroupLayout(
 				this);
-		this.setLayout(hotkeyPanelLayout);
+		setLayout(hotkeyPanelLayout);
 		hotkeyPanelLayout
 				.setHorizontalGroup(hotkeyPanelLayout
 						.createParallelGroup(
@@ -263,7 +361,8 @@ public class HotkeyPanel extends OptionSubPanel {
 										.addContainerGap()
 										.addComponent(noteLabel)
 										.addContainerGap(137, Short.MAX_VALUE)));
-		hotkeyPanelLayout.setVerticalGroup(hotkeyPanelLayout
+		hotkeyPanelLayout
+				.setVerticalGroup(hotkeyPanelLayout
 						.createParallelGroup(
 								javax.swing.GroupLayout.Alignment.LEADING)
 						.addGroup(
@@ -346,7 +445,7 @@ public class HotkeyPanel extends OptionSubPanel {
 	}
 
 	public void loadCurrentHotkeys() {
-		JSONObject keys = configuration.getJSONObject("hotkeys");
+		final JSONObject keys = configuration.getJSONObject("hotkeys");
 		if (keys == null) {
 			return;
 		}
@@ -361,12 +460,14 @@ public class HotkeyPanel extends OptionSubPanel {
 			cropHotkeyButton.setText(Language.getString("hotkeyNotSet"));
 		}
 		if (keys.has("clipboard")) {
-			clipboardHotkeyButton.setText(getButtonText(keys.getString("clipboard")));
+			clipboardHotkeyButton.setText(getButtonText(keys
+					.getString("clipboard")));
 		} else {
 			clipboardHotkeyButton.setText(Language.getString("hotkeyNotSet"));
 		}
 		if (keys.has("options")) {
-			optionsHotkeyButton.setText(getButtonText(keys.getString("options")));
+			optionsHotkeyButton
+					.setText(getButtonText(keys.getString("options")));
 		} else {
 			optionsHotkeyButton.setText(Language.getString("hotkeyNotSet"));
 		}
@@ -377,7 +478,8 @@ public class HotkeyPanel extends OptionSubPanel {
 		}
 		if (Platform.isWindows() || Platform.isLinux()) {
 			if (keys.has("active")) {
-				activeHotkeyButton.setText(getButtonText(keys.getString("active")));
+				activeHotkeyButton.setText(getButtonText(keys
+						.getString("active")));
 			} else {
 				activeHotkeyButton.setText(Language.getString("hotkeyNotSet"));
 			}
@@ -388,116 +490,38 @@ public class HotkeyPanel extends OptionSubPanel {
 	}
 
 	public void savePreferences() {
-		JSONObject keys = new JSONObject();
-		String full = fullHotkeyButton.getText();
+		final JSONObject keys = new JSONObject();
+		final String full = fullHotkeyButton.getText();
 		if (!full.equals(Language.getString("hotkeyNotSet"))) {
 			keys.put("full", getFormattedKeyStroke(full));
 		}
-		String crop = cropHotkeyButton.getText();
+		final String crop = cropHotkeyButton.getText();
 		if (!crop.equals(Language.getString("hotkeyNotSet"))) {
 			keys.put("crop", getFormattedKeyStroke(crop));
 		}
-		String clipboard = clipboardHotkeyButton.getText();
+		final String clipboard = clipboardHotkeyButton.getText();
 		if (!clipboard.equals(Language.getString("hotkeyNotSet"))) {
 			keys.put("clipboard", getFormattedKeyStroke(clipboard));
 		}
-		String active = activeHotkeyButton.getText();
+		final String active = activeHotkeyButton.getText();
 		if (!active.equals(Language.getString("hotkeyNotSet"))) {
 			keys.put("active", getFormattedKeyStroke(active));
 		}
-		String file = fileHotkeyButton.getText();
+		final String file = fileHotkeyButton.getText();
 		if (!file.equals(Language.getString("hotkeyNotSet"))) {
 			keys.put("file", getFormattedKeyStroke(file));
 		}
-		String options = optionsHotkeyButton.getText();
+		final String options = optionsHotkeyButton.getText();
 		if (!options.equals(Language.getString("hotkeyNotSet"))) {
 			keys.put("options", getFormattedKeyStroke(options));
 		}
 		configuration.put("hotkeys", keys);
 		try {
 			configuration.save();
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
 		hotkeySaveButton.setEnabled(false);
 		hotkeyResetButton.setEnabled(false);
-	}
-
-	public class HotkeyChangeListener extends KeyAdapter {
-		private JButton button;
-
-		public HotkeyChangeListener(JButton button) {
-			this.button = button;
-		}
-
-		@Override
-		public void keyPressed(KeyEvent e) {
-			// If the key is unknown/a function key
-			if (e.getKeyCode() == 0 || e.getKeyCode() == KeyEvent.VK_ALT || e.getKeyCode() == KeyEvent.VK_CONTROL || e.getKeyCode() == KeyEvent.VK_SHIFT || e.getKeyCode() == KeyEvent.VK_META) {
-				return;
-			}
-			// Consume any keys that may cause tab changes/other undesired
-			// behavior
-			e.consume();
-		}
-
-		@Override
-		public void keyReleased(KeyEvent e) {
-			if (parent.getSnapper().getKeyManager().hasKeysBound()) {
-				parent.getSnapper().getKeyManager().resetKeys();
-			}
-			// If the key is unknown/a function key
-			if (e.getKeyCode() == 0 || e.getKeyCode() == KeyEvent.VK_ALT || e.getKeyCode() == KeyEvent.VK_CONTROL || e.getKeyCode() == KeyEvent.VK_SHIFT || e.getKeyCode() == KeyEvent.VK_META) {
-				return;
-			}
-			button.setText(formatKeyStroke(KeyStroke.getKeyStrokeForEvent(e)));
-			if (!hotkeyResetButton.isEnabled()) {
-				hotkeyResetButton.setEnabled(true);
-			}
-			if (!hotkeySaveButton.isEnabled()) {
-				hotkeySaveButton.setEnabled(true);
-			}
-		}
-	}
-
-	public static String formatKeyStroke(KeyStroke stroke) {
-		if (stroke == null) {
-			return Language.getString("hotkeyNotSet");
-		}
-		String s = stroke.toString();
-		s = s.replace("released ", "");
-		s = s.replace("typed ", "");
-		s = s.replace("pressed ", "");
-		StringBuilder out = new StringBuilder();
-		String[] split = s.split(" ");
-		for (int i = 0; i < split.length; i++) {
-			String str = split[i];
-			if (str.contains("_")) {
-				str = str.replace('_', ' ');
-			}
-			out.append(Util.ucwords(str));
-			if (i != (split.length - 1)) {
-				out.append(" + ");
-			}
-		}
-		return out.toString();
-	}
-
-	public static String getFormattedKeyStroke(String s) {
-		String[] split = s.split(" \\+ ");
-		StringBuilder out = new StringBuilder();
-		for (int i = 0; i < split.length; i++) {
-			if (i == (split.length - 1)) {
-				out.append(split[i].toUpperCase().replace(' ', '_'));
-			} else {
-				out.append(split[i].toLowerCase());
-				out.append(" ");
-			}
-		}
-		return out.toString();
-	}
-
-	private String getButtonText(String stroke) {
-		return formatKeyStroke(KeyStroke.getKeyStroke(stroke));
 	}
 }

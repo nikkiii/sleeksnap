@@ -46,73 +46,80 @@ import javax.swing.KeyStroke;
 import com.tulskiy.keymaster.common.HotKey;
 
 /**
- * Author: Denis Tulskiy
- * Date: 6/20/11
+ * Author: Denis Tulskiy Date: 6/20/11
  */
 public class KeyMap {
-    @SuppressWarnings("serial")
-	private static final Map<Integer, Integer> codeExceptions = new HashMap<Integer, Integer>() {{
-		put(VK_PRINTSCREEN, 0x2C);
-        put(VK_INSERT, 0x2D);
-        put(VK_DELETE, 0x2E);
-        put(VK_ENTER, 0x0D);
-        put(VK_COMMA, 0xBC);
-        put(VK_PERIOD, 0xBE);
-        put(VK_PLUS, 0xBB);
-        put(VK_MINUS, 0xBD);
-        put(VK_SLASH, 0xBF);
-        put(VK_SEMICOLON, 0xBA);
-    }};
+	@SuppressWarnings("serial")
+	private static final Map<Integer, Integer> codeExceptions = new HashMap<Integer, Integer>() {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = -5526102837047296604L;
 
-    public static int getCode(HotKey hotKey) {
-        if (hotKey.isMedia()) {
-            int code = 0;
-            switch (hotKey.getMediaKey()) {
-                case MEDIA_NEXT_TRACK:
-                    code = VK_MEDIA_NEXT_TRACK;
-                    break;
-                case MEDIA_PLAY_PAUSE:
-                    code = VK_MEDIA_PLAY_PAUSE;
-                    break;
-                case MEDIA_PREV_TRACK:
-                    code = VK_MEDIA_PREV_TRACK;
-                    break;
-                case MEDIA_STOP:
-                    code = VK_MEDIA_STOP;
-                    break;
-            }
+		{
+			put(VK_PRINTSCREEN, 0x2C);
+			put(VK_INSERT, 0x2D);
+			put(VK_DELETE, 0x2E);
+			put(VK_ENTER, 0x0D);
+			put(VK_COMMA, 0xBC);
+			put(VK_PERIOD, 0xBE);
+			put(VK_PLUS, 0xBB);
+			put(VK_MINUS, 0xBD);
+			put(VK_SLASH, 0xBF);
+			put(VK_SEMICOLON, 0xBA);
+		}
+	};
 
-            return code;
-        } else {
-            KeyStroke keyStroke = hotKey.getKeyStroke();
-            Integer code = codeExceptions.get(keyStroke.getKeyCode());
-            if (code != null) {
-                return code;
-            } else
-                return keyStroke.getKeyCode();
-        }
-    }
+	public static int getCode(final HotKey hotKey) {
+		if (hotKey.isMedia()) {
+			int code = 0;
+			switch (hotKey.getMediaKey()) {
+			case MEDIA_NEXT_TRACK:
+				code = VK_MEDIA_NEXT_TRACK;
+				break;
+			case MEDIA_PLAY_PAUSE:
+				code = VK_MEDIA_PLAY_PAUSE;
+				break;
+			case MEDIA_PREV_TRACK:
+				code = VK_MEDIA_PREV_TRACK;
+				break;
+			case MEDIA_STOP:
+				code = VK_MEDIA_STOP;
+				break;
+			}
 
-    public static int getModifiers(KeyStroke keyCode) {
-        int modifiers = 0;
-        if (keyCode != null) {
-            if ((keyCode.getModifiers() & InputEvent.SHIFT_DOWN_MASK) != 0) {
-                modifiers |= MOD_SHIFT;
-            }
-            if ((keyCode.getModifiers() & InputEvent.CTRL_DOWN_MASK) != 0) {
-                modifiers |= MOD_CONTROL;
-            }
-            if ((keyCode.getModifiers() & InputEvent.META_DOWN_MASK) != 0) {
-                modifiers |= MOD_WIN;
-            }
-            if ((keyCode.getModifiers() & InputEvent.ALT_DOWN_MASK) != 0) {
-                modifiers |= MOD_ALT;
-            }
-        }
+			return code;
+		} else {
+			final KeyStroke keyStroke = hotKey.getKeyStroke();
+			final Integer code = codeExceptions.get(keyStroke.getKeyCode());
+			if (code != null) {
+				return code;
+			} else {
+				return keyStroke.getKeyCode();
+			}
+		}
+	}
 
-        if (System.getProperty("os.name", "").startsWith("Windows 7")) {
-            modifiers |= MOD_NOREPEAT;
-        }
-        return modifiers;
-    }
+	public static int getModifiers(final KeyStroke keyCode) {
+		int modifiers = 0;
+		if (keyCode != null) {
+			if ((keyCode.getModifiers() & InputEvent.SHIFT_DOWN_MASK) != 0) {
+				modifiers |= MOD_SHIFT;
+			}
+			if ((keyCode.getModifiers() & InputEvent.CTRL_DOWN_MASK) != 0) {
+				modifiers |= MOD_CONTROL;
+			}
+			if ((keyCode.getModifiers() & InputEvent.META_DOWN_MASK) != 0) {
+				modifiers |= MOD_WIN;
+			}
+			if ((keyCode.getModifiers() & InputEvent.ALT_DOWN_MASK) != 0) {
+				modifiers |= MOD_ALT;
+			}
+		}
+
+		if (System.getProperty("os.name", "").startsWith("Windows 7")) {
+			modifiers |= MOD_NOREPEAT;
+		}
+		return modifiers;
+	}
 }

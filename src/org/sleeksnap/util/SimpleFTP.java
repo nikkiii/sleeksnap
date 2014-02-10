@@ -39,6 +39,14 @@ import java.util.StringTokenizer;
  */
 public class SimpleFTP {
 
+	private static boolean DEBUG = false;
+
+	private BufferedReader reader = null;
+
+	private Socket socket = null;
+
+	private BufferedWriter writer = null;
+
 	/**
 	 * Create an instance of SimpleFTP.
 	 */
@@ -47,17 +55,38 @@ public class SimpleFTP {
 	}
 
 	/**
+	 * Enter ASCII mode for sending text files. This is usually the default
+	 * mode. Make sure you use binary mode if you are sending images or other
+	 * binary data, as ASCII mode is likely to corrupt them.
+	 */
+	public synchronized boolean ascii() throws IOException {
+		sendLine("TYPE A");
+		final String response = readLine();
+		return (response.startsWith("200 "));
+	}
+
+	/**
+	 * Enter binary mode for sending binary files.
+	 */
+	public synchronized boolean bin() throws IOException {
+		sendLine("TYPE I");
+		final String response = readLine();
+		return (response.startsWith("200 "));
+	}
+
+	/**
 	 * Connects to the default port of an FTP server and logs in as
 	 * anonymous/anonymous.
 	 */
-	public synchronized void connect(String host) throws IOException {
+	public synchronized void connect(final String host) throws IOException {
 		connect(host, 21);
 	}
 
 	/**
 	 * Connects to an FTP server and logs in as anonymous/anonymous.
 	 */
-	public synchronized void connect(String host, int port) throws IOException {
+	public synchronized void connect(final String host, final int port)
+			throws IOException {
 		connect(host, port, "anonymous", "anonymous");
 	}
 
@@ -65,8 +94,8 @@ public class SimpleFTP {
 	 * Connects to an FTP server and logs in with the supplied username and
 	 * password.
 	 */
-	public synchronized void connect(String host, int port, String user,
-			String pass) throws IOException {
+	public synchronized void connect(final String host, final int port,
+			final String user, final String pass) throws IOException {
 		if (socket != null) {
 			throw new IOException(
 					"SimpleFTP is already connected. Disconnect first.");
@@ -106,6 +135,15 @@ public class SimpleFTP {
 	}
 
 	/**
+	 * Changes the working directory (like cd). Returns true if successful.
+	 */
+	public synchronized boolean cwd(final String dir) throws IOException {
+		sendLine("CWD " + dir);
+		final String response = readLine();
+		return (response.startsWith("250 "));
+	}
+
+	/**
 	 * Disconnects from the FTP server.
 	 */
 	public synchronized void disconnect() throws IOException {
@@ -122,10 +160,10 @@ public class SimpleFTP {
 	public synchronized String pwd() throws IOException {
 		sendLine("PWD");
 		String dir = null;
-		String response = readLine();
+		final String response = readLine();
 		if (response.startsWith("257 ")) {
-			int firstQuote = response.indexOf('\"');
-			int secondQuote = response.indexOf('\"', firstQuote + 1);
+			final int firstQuote = response.indexOf('\"');
+			final int secondQuote = response.indexOf('\"', firstQuote + 1);
 			if (secondQuote > 0) {
 				dir = response.substring(firstQuote + 1, secondQuote);
 			}
@@ -133,13 +171,31 @@ public class SimpleFTP {
 		return dir;
 	}
 
+	private String readLine() throws IOException {
+		final String line = reader.readLine();
+		if (DEBUG) {
+			System.out.println("< " + line);
+		}
+		return line;
+	}
+
 	/**
-	 * Changes the working directory (like cd). Returns true if successful.
+	 * Sends a raw command to the FTP server.
 	 */
-	public synchronized boolean cwd(String dir) throws IOException {
-		sendLine("CWD " + dir);
-		String response = readLine();
-		return (response.startsWith("250 "));
+	private void sendLine(final String line) throws IOException {
+		if (socket == null) {
+			throw new IOException("SimpleFTP is not connected.");
+		}
+		try {
+			writer.write(line + "\r\n");
+			writer.flush();
+			if (DEBUG) {
+				System.out.println("> " + line);
+			}
+		} catch (final IOException e) {
+			socket = null;
+			throw e;
+		}
 	}
 
 	/**
@@ -147,12 +203,12 @@ public class SimpleFTP {
 	 * transfer was successful. The file is sent in passive mode to avoid NAT or
 	 * firewall problems at the client end.
 	 */
-	public synchronized boolean stor(File file) throws IOException {
+	public synchronized boolean stor(final File file) throws IOException {
 		if (file.isDirectory()) {
 			throw new IOException("SimpleFTP cannot upload a directory.");
 		}
 
-		String filename = file.getName();
+		final String filename = file.getName();
 
 		return stor(new FileInputStream(file), filename);
 	}
@@ -162,10 +218,10 @@ public class SimpleFTP {
 	 * transfer was successful. The file is sent in passive mode to avoid NAT or
 	 * firewall problems at the client end.
 	 */
-	public synchronized boolean stor(InputStream inputStream, String filename)
-			throws IOException {
+	public synchronized boolean stor(final InputStream inputStream,
+			final String filename) throws IOException {
 
-		BufferedInputStream input = new BufferedInputStream(inputStream);
+		final BufferedInputStream input = new BufferedInputStream(inputStream);
 
 		sendLine("PASV");
 		String response = readLine();
@@ -176,17 +232,17 @@ public class SimpleFTP {
 
 		String ip = null;
 		int port = -1;
-		int opening = response.indexOf('(');
-		int closing = response.indexOf(')', opening + 1);
+		final int opening = response.indexOf('(');
+		final int closing = response.indexOf(')', opening + 1);
 		if (closing > 0) {
-			String dataLink = response.substring(opening + 1, closing);
-			StringTokenizer tokenizer = new StringTokenizer(dataLink, ",");
+			final String dataLink = response.substring(opening + 1, closing);
+			final StringTokenizer tokenizer = new StringTokenizer(dataLink, ",");
 			try {
 				ip = tokenizer.nextToken() + "." + tokenizer.nextToken() + "."
 						+ tokenizer.nextToken() + "." + tokenizer.nextToken();
 				port = Integer.parseInt(tokenizer.nextToken()) * 256
 						+ Integer.parseInt(tokenizer.nextToken());
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				throw new IOException(
 						"SimpleFTP received bad data link information: "
 								+ response);
@@ -195,7 +251,7 @@ public class SimpleFTP {
 
 		sendLine("STOR " + filename);
 
-		Socket dataSocket = new Socket(ip, port);
+		final Socket dataSocket = new Socket(ip, port);
 
 		response = readLine();
 		if (!response.startsWith("150 ")) {
@@ -203,9 +259,9 @@ public class SimpleFTP {
 					"SimpleFTP was not allowed to send the file: " + response);
 		}
 
-		BufferedOutputStream output = new BufferedOutputStream(
+		final BufferedOutputStream output = new BufferedOutputStream(
 				dataSocket.getOutputStream());
-		byte[] buffer = new byte[4096];
+		final byte[] buffer = new byte[4096];
 		int bytesRead = 0;
 		while ((bytesRead = input.read(buffer)) != -1) {
 			output.write(buffer, 0, bytesRead);
@@ -217,58 +273,5 @@ public class SimpleFTP {
 		response = readLine();
 		return response.startsWith("226 ");
 	}
-
-	/**
-	 * Enter binary mode for sending binary files.
-	 */
-	public synchronized boolean bin() throws IOException {
-		sendLine("TYPE I");
-		String response = readLine();
-		return (response.startsWith("200 "));
-	}
-
-	/**
-	 * Enter ASCII mode for sending text files. This is usually the default
-	 * mode. Make sure you use binary mode if you are sending images or other
-	 * binary data, as ASCII mode is likely to corrupt them.
-	 */
-	public synchronized boolean ascii() throws IOException {
-		sendLine("TYPE A");
-		String response = readLine();
-		return (response.startsWith("200 "));
-	}
-
-	/**
-	 * Sends a raw command to the FTP server.
-	 */
-	private void sendLine(String line) throws IOException {
-		if (socket == null) {
-			throw new IOException("SimpleFTP is not connected.");
-		}
-		try {
-			writer.write(line + "\r\n");
-			writer.flush();
-			if (DEBUG) {
-				System.out.println("> " + line);
-			}
-		} catch (IOException e) {
-			socket = null;
-			throw e;
-		}
-	}
-
-	private String readLine() throws IOException {
-		String line = reader.readLine();
-		if (DEBUG) {
-			System.out.println("< " + line);
-		}
-		return line;
-	}
-
-	private Socket socket = null;
-	private BufferedReader reader = null;
-	private BufferedWriter writer = null;
-
-	private static boolean DEBUG = false;
 
 }

@@ -24,14 +24,14 @@ import java.io.InputStream;
  * A base upload, used to define different types.
  * 
  * @author Nikki
- *
+ * 
  */
 public interface Upload {
 
 	/**
 	 * Get this upload as an InputStream
-	 * @return
-	 * 			The InputStream containing the upload data
+	 * 
+	 * @return The InputStream containing the upload data
 	 */
 	public InputStream asInputStream() throws IOException;
 }

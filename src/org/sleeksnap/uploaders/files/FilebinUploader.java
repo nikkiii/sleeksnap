@@ -27,15 +27,14 @@ import org.sleeksnap.uploaders.UploadException;
 import org.sleeksnap.uploaders.Uploader;
 
 /**
- * An uploader for http://filebin.ca
- * http://filebin.ca/tools.php
+ * An uploader for http://filebin.ca http://filebin.ca/tools.php
  * 
  * @author Nikki
- *
+ * 
  */
 @Settings(required = {}, optional = { "api_key" })
 public class FilebinUploader extends Uploader<FileUpload> {
-	
+
 	/**
 	 * The Filebin API URL
 	 */
@@ -47,25 +46,27 @@ public class FilebinUploader extends Uploader<FileUpload> {
 	}
 
 	@Override
-	public String upload(FileUpload file) throws Exception {
-		MultipartPostMethod post = new MultipartPostMethod(API_URL);
+	public String upload(final FileUpload file) throws Exception {
+		final MultipartPostMethod post = new MultipartPostMethod(API_URL);
 		post.setParameter("file", file.getFile());
-		if(settings.has("api_key")) {
+		if (settings.has("api_key")) {
 			post.setParameter("key", settings.getString("api_key"));
 		}
 		post.execute();
-		String resp = post.getResponse();
-		//Parsing it is not needed, but it's a good idea to make it easy to use.
-		Map<String, String> res = new HashMap<String, String>();
-		//The format is simple key:value, with url being a key, status will be 'error' or 'fail' on an error.
-		String[] lines = resp.split("\n");
-		for(String s : lines) {
-			int idx = s.indexOf(':');
-			if(idx != -1) {
-				res.put(s.substring(0, idx), s.substring(idx+1));
+		final String resp = post.getResponse();
+		// Parsing it is not needed, but it's a good idea to make it easy to
+		// use.
+		final Map<String, String> res = new HashMap<String, String>();
+		// The format is simple key:value, with url being a key, status will be
+		// 'error' or 'fail' on an error.
+		final String[] lines = resp.split("\n");
+		for (final String s : lines) {
+			final int idx = s.indexOf(':');
+			if (idx != -1) {
+				res.put(s.substring(0, idx), s.substring(idx + 1));
 			}
 		}
-		if(!res.containsKey("url")) {
+		if (!res.containsKey("url")) {
 			throw new UploadException(res.get("status"));
 		}
 		return res.get("url");

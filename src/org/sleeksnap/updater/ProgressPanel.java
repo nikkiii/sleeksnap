@@ -30,85 +30,112 @@ import org.sleeksnap.util.Utils.FormatUtil;
  * A JPanel which monitors the progress of a download
  * 
  * @author Nikki
- *
+ * 
  */
 @SuppressWarnings("serial")
 public class ProgressPanel extends JPanel implements DownloadListener {
 
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -1207791002421761841L;
+
+	/**
+	 * The ProgressBar to display percentage
+	 */
+	private JProgressBar progressBar;
+
+	/**
 	 * The label to represent download progress
 	 */
-    private JLabel progressLabel;
+	private JLabel progressLabel;
 
-    /**
-     * The ProgressBar to display percentage
-     */
-    private JProgressBar progressBar;
-    
-    /**
-     * Construct a new panel and initialize it.
-     */
-    public ProgressPanel() {
-        initComponents();
-    }
-    
-    /**
-     * Initialize the panel components
-     */
-    private void initComponents() {
-        progressBar = new JProgressBar();
-        progressLabel = new JLabel();
-
-        progressLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        progressLabel.setText("Progress");
-        
-        progressBar.setStringPainted(true);
-
-        GroupLayout layout = new GroupLayout(this);
-        this.setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                    .addComponent(progressBar, GroupLayout.Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 384, Short.MAX_VALUE)
-                    .addComponent(progressLabel, GroupLayout.DEFAULT_SIZE, 384, Short.MAX_VALUE))
-                .addContainerGap())
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(progressLabel)
-                .addGap(14, 14, 14)
-                .addComponent(progressBar, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-    }
+	/**
+	 * Construct a new panel and initialize it.
+	 */
+	public ProgressPanel() {
+		initComponents();
+	}
 
 	@Override
-	public void downloadStarted(Downloader downloader, long fileSize) {
-		//Set the initial values
+	public void downloadFinished(final Downloader downloader) {
+		progressLabel
+				.setText("Finished! Downloaded "
+						+ FormatUtil.humanReadableByteCount(
+								downloader.getFileSize(), false)
+						+ " in "
+						+ FormatUtil.timeElapsed(
+								(System.currentTimeMillis() - downloader
+										.getStartTime()), false));
+	}
+
+	@Override
+	public void downloadStarted(final Downloader downloader, final long fileSize) {
+		// Set the initial values
 		progressUpdated(downloader, 0, 0);
 	}
 
-	@Override
-	public void progressUpdated(Downloader downloader, int percent, long bytes) {
-		String text = FormatUtil.humanReadableByteCount(bytes, false)+"/"+ FormatUtil.humanReadableByteCount(downloader.getFileSize(), false);
-		if(downloader.getStartTime() != 0) {
-			//Update speed
-			int elapsed = (int) ((System.currentTimeMillis() - downloader.getStartTime()) / 1000);
-			if(elapsed > 0) {
-				text += " (" + FormatUtil.humanReadableByteCount(downloader.getFileSize() / elapsed, false) + "/s)";
-			}
-		}
-		//Set values
-		progressLabel.setText(text);
-		progressBar.setValue(percent);
+	/**
+	 * Initialize the panel components
+	 */
+	private void initComponents() {
+		progressBar = new JProgressBar();
+		progressLabel = new JLabel();
+
+		progressLabel.setHorizontalAlignment(SwingConstants.CENTER);
+		progressLabel.setText("Progress");
+
+		progressBar.setStringPainted(true);
+
+		final GroupLayout layout = new GroupLayout(this);
+		setLayout(layout);
+		layout.setHorizontalGroup(layout.createParallelGroup(
+				GroupLayout.Alignment.LEADING).addGroup(
+				layout.createSequentialGroup()
+						.addContainerGap()
+						.addGroup(
+								layout.createParallelGroup(
+										GroupLayout.Alignment.LEADING)
+										.addComponent(progressBar,
+												GroupLayout.Alignment.TRAILING,
+												GroupLayout.DEFAULT_SIZE, 384,
+												Short.MAX_VALUE)
+										.addComponent(progressLabel,
+												GroupLayout.DEFAULT_SIZE, 384,
+												Short.MAX_VALUE))
+						.addContainerGap()));
+		layout.setVerticalGroup(layout.createParallelGroup(
+				GroupLayout.Alignment.LEADING).addGroup(
+				layout.createSequentialGroup()
+						.addContainerGap()
+						.addComponent(progressLabel)
+						.addGap(14, 14, 14)
+						.addComponent(progressBar, GroupLayout.PREFERRED_SIZE,
+								29, GroupLayout.PREFERRED_SIZE)
+						.addContainerGap(GroupLayout.DEFAULT_SIZE,
+								Short.MAX_VALUE)));
 	}
 
 	@Override
-	public void downloadFinished(Downloader downloader) {
-		progressLabel.setText("Finished! Downloaded " + FormatUtil.humanReadableByteCount(downloader.getFileSize(), false) + " in " + FormatUtil.timeElapsed((System.currentTimeMillis() - downloader.getStartTime()), false));
+	public void progressUpdated(final Downloader downloader, final int percent,
+			final long bytes) {
+		String text = FormatUtil.humanReadableByteCount(bytes, false)
+				+ "/"
+				+ FormatUtil.humanReadableByteCount(downloader.getFileSize(),
+						false);
+		if (downloader.getStartTime() != 0) {
+			// Update speed
+			final int elapsed = (int) ((System.currentTimeMillis() - downloader
+					.getStartTime()) / 1000);
+			if (elapsed > 0) {
+				text += " ("
+						+ FormatUtil.humanReadableByteCount(
+								downloader.getFileSize() / elapsed, false)
+						+ "/s)";
+			}
+		}
+		// Set values
+		progressLabel.setText(text);
+		progressBar.setValue(percent);
 	}
 }

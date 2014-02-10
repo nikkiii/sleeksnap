@@ -9,7 +9,7 @@ import org.sleeksnap.util.WinRegistry;
  * A utility class only used when Sleeksnap is installed by the NSIS installer
  * 
  * @author Nikki
- *
+ * 
  */
 public class WindowsUpdater {
 	/**
@@ -23,23 +23,31 @@ public class WindowsUpdater {
 	 * @param file
 	 *            The file to update the path to
 	 */
-	public static void checkStartMenu(File file) throws Exception {
-		String menuGroup = findStartMenuGroup();
+	public static void checkStartMenu(final File file) throws Exception {
+		final String menuGroup = findStartMenuGroup();
 		if (menuGroup != null) {
-			String folder = WinRegistry.readString(WinRegistry.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders", "Programs");
-			File folderPath = new File(folder + File.separatorChar + menuGroup);
+			final String folder = WinRegistry
+					.readString(
+							WinRegistry.HKEY_CURRENT_USER,
+							"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+							"Programs");
+			final File folderPath = new File(folder + File.separatorChar
+					+ menuGroup);
 			if (folderPath != null) {
-				File shortcutFile = new File(folderPath, "Sleeksnap.lnk");
+				final File shortcutFile = new File(folderPath, "Sleeksnap.lnk");
 
 				if (shortcutFile.exists()) {
 					String scriptContents = "Set sh = CreateObject(\"WScript.Shell\")\n";
-					scriptContents += "Set shortcut = sh.CreateShortcut(\"" + shortcutFile.getAbsolutePath() + "\")\n";
-					scriptContents += "shortcut.TargetPath = \"" + file.getAbsolutePath() + "\"\n";
+					scriptContents += "Set shortcut = sh.CreateShortcut(\""
+							+ shortcutFile.getAbsolutePath() + "\")\n";
+					scriptContents += "shortcut.TargetPath = \""
+							+ file.getAbsolutePath() + "\"\n";
 					scriptContents += "shortcut.Save\n";
 
-					File tmpScript = File.createTempFile("setshortcut", ".vbs");
+					final File tmpScript = File.createTempFile("setshortcut",
+							".vbs");
 
-					FileWriter writer = new FileWriter(tmpScript);
+					final FileWriter writer = new FileWriter(tmpScript);
 					try {
 						writer.write(scriptContents);
 					} finally {
@@ -47,10 +55,13 @@ public class WindowsUpdater {
 					}
 
 					try {
-						Runtime.getRuntime().exec(new String[] { "cscript", tmpScript.getAbsolutePath() });
+						Runtime.getRuntime().exec(
+								new String[] { "cscript",
+										tmpScript.getAbsolutePath() });
 					} finally {
-						if (!tmpScript.delete())
+						if (!tmpScript.delete()) {
 							tmpScript.deleteOnExit();
+						}
 					}
 				}
 			}
@@ -64,15 +75,18 @@ public class WindowsUpdater {
 	 * @throws Exception
 	 */
 	private static String findStartMenuGroup() throws Exception {
-		String[] locations = new String[] { "Software\\Sleeksnap", "Software\\Wow6432Node\\Sleeksnap" };
+		final String[] locations = new String[] { "Software\\Sleeksnap",
+				"Software\\Wow6432Node\\Sleeksnap" };
 
 		String menuGroup = null;
-		for (String s : locations) {
-			menuGroup = WinRegistry.readString(WinRegistry.HKEY_CURRENT_USER, s, "StartMenuGroup");
+		for (final String s : locations) {
+			menuGroup = WinRegistry.readString(WinRegistry.HKEY_CURRENT_USER,
+					s, "StartMenuGroup");
 			if (menuGroup != null) {
 				break;
 			}
-			menuGroup = WinRegistry.readString(WinRegistry.HKEY_LOCAL_MACHINE, s, "StartMenuGroup");
+			menuGroup = WinRegistry.readString(WinRegistry.HKEY_LOCAL_MACHINE,
+					s, "StartMenuGroup");
 			if (menuGroup != null) {
 				break;
 			}

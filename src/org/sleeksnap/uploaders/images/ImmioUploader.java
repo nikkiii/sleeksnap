@@ -30,10 +30,10 @@ import org.sleeksnap.util.Utils.FileUtils;
  * An image uploader for http://imm.io
  * 
  * @author Nikki
- *
+ * 
  */
 public class ImmioUploader extends Uploader<ImageUpload> {
-	
+
 	private static final String API_URL = "http://imm.io/store/";
 
 	@Override
@@ -42,15 +42,23 @@ public class ImmioUploader extends Uploader<ImageUpload> {
 	}
 
 	@Override
-	public String upload(ImageUpload image) throws Exception {
-		MultipartPostMethod post = new MultipartPostMethod(API_URL);
-		post.setParameter("image", new MultipartFile(FileUtils.generateFileName("png"), image.asInputStream()));
-		post.setParameter("meta", new JSONObject().put("referer", new JSONObject().put("name", Application.NAME).put("url", Application.URL)).toString());
+	public String upload(final ImageUpload image) throws Exception {
+		final MultipartPostMethod post = new MultipartPostMethod(API_URL);
+		post.setParameter(
+				"image",
+				new MultipartFile(FileUtils.generateFileName("png"), image
+						.asInputStream()));
+		post.setParameter(
+				"meta",
+				new JSONObject().put(
+						"referer",
+						new JSONObject().put("name", Application.NAME).put(
+								"url", Application.URL)).toString());
 		post.execute();
-		//Read the response as JSON
-		JSONObject object = new JSONObject(post.getResponse());
-		if(object.getBoolean("success")) {
-			JSONObject payload = object.getJSONObject("payload");
+		// Read the response as JSON
+		final JSONObject object = new JSONObject(post.getResponse());
+		if (object.getBoolean("success")) {
+			final JSONObject payload = object.getJSONObject("payload");
 			return payload.getString("uri");
 		} else {
 			throw new UploadException(object.getString("payload"));

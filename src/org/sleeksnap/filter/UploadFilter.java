@@ -20,21 +20,23 @@ package org.sleeksnap.filter;
 import org.sleeksnap.upload.Upload;
 
 /**
- * An interface representing an upload filter, used to modify images, text or files before uploading
+ * An interface representing an upload filter, used to modify images, text or
+ * files before uploading
+ * 
  * @author Nikki
- *
+ * 
  * @param <T>
  */
 public interface UploadFilter<T extends Upload> {
 
 	/**
 	 * Apply this filter to the object
+	 * 
 	 * @param object
-	 * 			The object to apply to
-	 * @return
-	 * 			The modified object, or original object.
-	 * @throws FilterException 
+	 *            The object to apply to
+	 * @return The modified object, or original object.
+	 * @throws FilterException
 	 */
 	public T filter(T object) throws FilterException;
-	
+
 }

@@ -29,34 +29,41 @@ import org.sleeksnap.util.Utils.FormatUtil;
  * An uploader for slexy.org
  * 
  * @author Nikki
- *
+ * 
  */
-@Settings(required = {}, optional = { "author", "description", "visibility|combobox[Public,Private]", "line_numbers|checkbox[true]", "expiration|combobox[No expiration,5 minutes,15 minutes,30 minutes,1 hour,6 hours,12 hours,1 day,3 days,5 days,10 days,15 days,1 month,3 months,6 months]" })
+@Settings(required = {}, optional = {
+		"author",
+		"description",
+		"visibility|combobox[Public,Private]",
+		"line_numbers|checkbox[true]",
+		"expiration|combobox[No expiration,5 minutes,15 minutes,30 minutes,1 hour,6 hours,12 hours,1 day,3 days,5 days,10 days,15 days,1 month,3 months,6 months]" })
 public class SlexyUploader extends Uploader<TextUpload> {
-	
-	private static final String APIURL = "http://slexy.org/index.php/submit";
 
-	@Override
-	public String upload(TextUpload t) throws Exception {
-		RequestData data = new RequestData();
-		
-		data.put("raw_paste", t.getText())
-			.put("author", settings.getString("author", ""))
-			.put("comment", "")
-			.put("desc", settings.getString("description", ""))
-			.put("expire", FormatUtil.formattedTimeToSeconds(settings.getString("expiration", "0")))
-			.put("language", "text")
-			.put("linenumbers", settings.getBoolean("line_numbers", true))
-			.put("permissions", settings.getString("visibility").equals("Private") ? 1 : 0)
-			.put("submit", "Submit Paste")
-			.put("tabbing", "true")
-			.put("tabtype", "real");
-		
-		return HttpUtil.executePost(APIURL, data, ResponseType.REDIRECT_URL);
-	}
+	private static final String APIURL = "http://slexy.org/index.php/submit";
 
 	@Override
 	public String getName() {
 		return "Slexy.org";
+	}
+
+	@Override
+	public String upload(final TextUpload t) throws Exception {
+		final RequestData data = new RequestData();
+
+		data.put("raw_paste", t.getText())
+				.put("author", settings.getString("author", ""))
+				.put("comment", "")
+				.put("desc", settings.getString("description", ""))
+				.put("expire",
+						FormatUtil.formattedTimeToSeconds(settings.getString(
+								"expiration", "0")))
+				.put("language", "text")
+				.put("linenumbers", settings.getBoolean("line_numbers", true))
+				.put("permissions",
+						settings.getString("visibility").equals("Private") ? 1
+								: 0).put("submit", "Submit Paste")
+				.put("tabbing", "true").put("tabtype", "real");
+
+		return HttpUtil.executePost(APIURL, data, ResponseType.REDIRECT_URL);
 	}
 }

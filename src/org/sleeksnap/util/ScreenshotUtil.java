@@ -44,7 +44,7 @@ public class ScreenshotUtil {
 	static {
 		try {
 			robot = new Robot();
-		} catch (AWTException e) {
+		} catch (final AWTException e) {
 			// We can't run without this!
 			throw new RuntimeException(
 					"Robot not initialized, shutting down...");
@@ -67,7 +67,7 @@ public class ScreenshotUtil {
 	 *            The dimensions of the area, starts at 0,0
 	 * @return The captured image
 	 */
-	public static BufferedImage capture(Dimension d) {
+	public static BufferedImage capture(final Dimension d) {
 		return capture(new Rectangle(0, 0, d.width, d.height));
 	}
 
@@ -79,7 +79,7 @@ public class ScreenshotUtil {
 	 *            Rect to capture in screen coordinates
 	 * @return The captured image
 	 */
-	public static BufferedImage capture(Rectangle rectangle) {
+	public static BufferedImage capture(final Rectangle rectangle) {
 		return robot.createScreenCapture(rectangle);
 	}
 }

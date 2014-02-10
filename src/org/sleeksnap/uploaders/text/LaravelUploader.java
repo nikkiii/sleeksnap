@@ -11,7 +11,7 @@ import org.sleeksnap.uploaders.Uploader;
  * @deprecated Laravel removed their paste bucket due to terms of use problems.
  * 
  * @author Nikki
- *
+ * 
  */
 @Deprecated
 public class LaravelUploader extends Uploader<TextUpload> {
@@ -19,13 +19,15 @@ public class LaravelUploader extends Uploader<TextUpload> {
 	private static final String LARAVEL_URL = "http://paste.laravel.com/";
 
 	@Override
-	public String upload(TextUpload t) throws Exception {
-		return HttpUtil.executePost(LARAVEL_URL, "paste=" + HttpUtil.encode(t.getText()), ResponseType.REDIRECT_URL);
+	public String getName() {
+		return "Laravel";
 	}
 
 	@Override
-	public String getName() {
-		return "Laravel";
+	public String upload(final TextUpload t) throws Exception {
+		return HttpUtil.executePost(LARAVEL_URL,
+				"paste=" + HttpUtil.encode(t.getText()),
+				ResponseType.REDIRECT_URL);
 	}
 
 }

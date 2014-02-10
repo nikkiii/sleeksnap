@@ -47,48 +47,49 @@ public class FileLogHandler extends java.util.logging.Handler {
 		configure();
 	}
 
-	/**
-	 * Configure the logger
-	 */
-	private void configure() {
-		File file = new File(Util.getWorkingDirectory(), "log.txt");
+	@Override
+	public void close() throws SecurityException {
 		try {
-			writer = new BufferedWriter(new FileWriter(file));
-		} catch (IOException e) {
+			writer.close();
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-	@Override
-	public void publish(LogRecord record) {
-		if (getFormatter() == null)
-			setFormatter(new SimpleFormatter());
-		if (!isLoggable(record)) {
-			return;
-		}
+	/**
+	 * Configure the logger
+	 */
+	private void configure() {
+		final File file = new File(Util.getWorkingDirectory(), "log.txt");
 		try {
-			writer.write(getFormatter().format(record));
-		} catch (IOException e) {
+			writer = new BufferedWriter(new FileWriter(file));
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
-		flush();
 	}
 
 	@Override
 	public void flush() {
 		try {
 			writer.flush();
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
 	}
 
 	@Override
-	public void close() throws SecurityException {
+	public void publish(final LogRecord record) {
+		if (getFormatter() == null) {
+			setFormatter(new SimpleFormatter());
+		}
+		if (!isLoggable(record)) {
+			return;
+		}
 		try {
-			writer.close();
-		} catch (IOException e) {
+			writer.write(getFormatter().format(record));
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
+		flush();
 	}
 }

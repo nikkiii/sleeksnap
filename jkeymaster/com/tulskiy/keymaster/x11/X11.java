@@ -26,79 +26,82 @@ import com.sun.jna.Structure;
 import com.sun.jna.Union;
 
 /**
- * Author: Denis Tulskiy
- * Date: 7/14/11
+ * Author: Denis Tulskiy Date: 7/14/11
  */
 public interface X11 extends Library {
-    public static X11 Lib = (X11) Native.loadLibrary("X11", X11.class);
+	public static class XErrorEvent extends Structure {
+		public Pointer display; // Display the event was read from
+		public byte error_code; // error code of failed request
+		public byte minor_code; // Minor op-code of failed request
+		public byte request_code; // Major op-code of failed request
+		public NativeLong resourceid; // resource id
+		public NativeLong serial; // serial number of failed request
+		public int type;
+	}
 
-    public static final int GrabModeAsync = 1;
-    public static final int KeyPress = 2;
+	public interface XErrorHandler extends Callback {
+		public int apply(Pointer display, XErrorEvent errorEvent);
+	}
 
-    public static final int ShiftMask = (1);
-    public static final int LockMask = (1 << 1);
-    public static final int ControlMask = (1 << 2);
-    public static final int Mod1Mask = (1 << 3);
-    public static final int Mod2Mask = (1 << 4);
-    public static final int Mod3Mask = (1 << 5);
-    public static final int Mod4Mask = (1 << 6);
-    public static final int Mod5Mask = (1 << 7);
+	public static class XEvent extends Union {
+		public NativeLong[] pad = new NativeLong[24];
+		public int type;
+		public XKeyEvent xkey;
+	}
 
-    public Pointer XOpenDisplay(String name);
+	public static class XKeyEvent extends Structure {
+		public Pointer display; // public Display the event was read from
+		public int keycode; // detail
+		public NativeLong root; // root window that the event occurred on
+		public int same_screen; // same screen flag
+		public int send_event; // true if this came from a SendEvent request
+		public NativeLong serial; // # of last request processed by server
+		public int state; // key or button mask
+		public NativeLong subwindow; // child window
+		public NativeLong time; // milliseconds
+		public int type; // of event
+		public NativeLong window; // "event" window it is reported relative to
+		public int x, y; // pointer x, y coordinates in event window
+		public int x_root, y_root; // coordinates relative to root
+	}
 
-    public NativeLong XDefaultRootWindow(Pointer display);
+	public static final int ControlMask = (1 << 2);
+	public static final int GrabModeAsync = 1;
+	public static final int KeyPress = 2;
+	public static X11 Lib = (X11) Native.loadLibrary("X11", X11.class);
+	public static final int LockMask = (1 << 1);
+	public static final int Mod1Mask = (1 << 3);
+	public static final int Mod2Mask = (1 << 4);
 
-    public byte XKeysymToKeycode(Pointer display, long keysym);
+	public static final int Mod3Mask = (1 << 5);
 
-    public int XGrabKey(Pointer display, int code, int modifiers, NativeLong root, int ownerEvents, int pointerMode, int keyBoardMode);
+	public static final int Mod4Mask = (1 << 6);
 
-    public int XUngrabKey(Pointer display, int code, int modifiers, NativeLong root);
+	public static final int Mod5Mask = (1 << 7);
 
-    public int XNextEvent(Pointer display, XEvent event);
+	public static final int ShiftMask = (1);
 
-    public int XPending(Pointer display);
+	public int XCloseDisplay(Pointer display);
 
-    public int XCloseDisplay(Pointer display);
+	public NativeLong XDefaultRootWindow(Pointer display);
 
-    public XErrorHandler XSetErrorHandler(XErrorHandler errorHandler);
+	public int XGetErrorText(Pointer display, int code, byte[] buffer, int len);
 
-    public int XGetErrorText(Pointer display, int code, byte[] buffer, int len);
-    
-    public int XInitThreads();
+	public int XGrabKey(Pointer display, int code, int modifiers,
+			NativeLong root, int ownerEvents, int pointerMode, int keyBoardMode);
 
-    public interface XErrorHandler extends Callback {
-        public int apply(Pointer display, XErrorEvent errorEvent);
-    }
+	public int XInitThreads();
 
-    public static class XEvent extends Union {
-        public int type;
-        public XKeyEvent xkey;
-        public NativeLong[] pad = new NativeLong[24];
-    }
+	public byte XKeysymToKeycode(Pointer display, long keysym);
 
-    public static class XKeyEvent extends Structure {
-        public int type;            // of event
-        public NativeLong serial;   // # of last request processed by server
-        public int send_event;      // true if this came from a SendEvent request
-        public Pointer display;     // public Display the event was read from
-        public NativeLong window;         // "event" window it is reported relative to
-        public NativeLong root;           // root window that the event occurred on
-        public NativeLong subwindow;      // child window
-        public NativeLong time;     // milliseconds
-        public int x, y;            // pointer x, y coordinates in event window
-        public int x_root, y_root;  // coordinates relative to root
-        public int state;           // key or button mask
-        public int keycode;         // detail
-        public int same_screen;     // same screen flag
-    }
+	public int XNextEvent(Pointer display, XEvent event);
 
-    public static class XErrorEvent extends Structure {
-        public int type;
-        public Pointer display;     // Display the event was read from
-        public NativeLong resourceid;     // resource id
-        public NativeLong serial;   // serial number of failed request
-        public byte error_code;     // error code of failed request
-        public byte request_code;   // Major op-code of failed request
-        public byte minor_code;     // Minor op-code of failed request
-    }
+	public Pointer XOpenDisplay(String name);
+
+	public int XPending(Pointer display);
+
+	public XErrorHandler XSetErrorHandler(XErrorHandler errorHandler);
+
+	public int XUngrabKey(Pointer display, int code, int modifiers,
+			NativeLong root);
 }

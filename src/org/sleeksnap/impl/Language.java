@@ -34,54 +34,90 @@ import org.sleeksnap.util.Util;
  * A basic multi language implementation using JSON files
  * 
  * @author Nikki
- *
+ * 
  */
 public class Language {
-	
-	/**
-	 * Pattern to match variables with
-	 */
-	private static final Pattern VAR_PATTERN = Pattern.compile("\\{(\\d+)\\}");
-	
+
 	/**
 	 * Tokens in the current loaded language set
 	 */
 	private static Map<String, String> tokens = new HashMap<String, String>();
-	
+
 	/**
-	 * Load a language after loading the default 'english' language to prevent missing phrases.
-	 * @param lang
-	 * 			The language name to load
-	 * @throws IOException
-	 * 			If an error occurs while loading
+	 * Pattern to match variables with
 	 */
-	public static void load(String lang) throws IOException {
+	private static final Pattern VAR_PATTERN = Pattern.compile("\\{(\\d+)\\}");
+
+	/**
+	 * Get a language string
+	 * 
+	 * @param token
+	 *            The language token name
+	 * @param args
+	 *            The language arguments
+	 * @return The parsed language string, or "" if null
+	 */
+	public static String getString(final String token, final Object... args) {
+		String str = tokens.get(token);
+
+		if (str == null) {
+			return "";
+		}
+
+		if (str.indexOf('{') != -1) {
+			final Matcher m = VAR_PATTERN.matcher(str);
+
+			final StringBuffer out = new StringBuffer();
+			while (m.find()) {
+				final int paramIndex = Integer.parseInt(m.group(1));
+				if (args.length > paramIndex - 1) {
+					m.appendReplacement(out, args[paramIndex - 1].toString());
+				}
+			}
+			m.appendTail(out);
+
+			str = out.toString();
+		}
+		return str;
+	}
+
+	/**
+	 * Load a language after loading the default 'english' language to prevent
+	 * missing phrases.
+	 * 
+	 * @param lang
+	 *            The language name to load
+	 * @throws IOException
+	 *             If an error occurs while loading
+	 */
+	public static void load(final String lang) throws IOException {
 		tokens.clear();
-		
+
 		loadAndMerge("english");
-		if(!lang.equals("english")) {
+		if (!lang.equals("english")) {
 			loadAndMerge(lang);
 		}
 	}
-	
+
 	/**
 	 * Load and merge the tokens from a language
+	 * 
 	 * @param lang
-	 * 			The language to load
+	 *            The language to load
 	 * @throws IOException
-	 * 			If an error occurs, or if it's an invalid language file
+	 *             If an error occurs, or if it's an invalid language file
 	 */
 	@SuppressWarnings("unchecked")
-	public static void loadAndMerge(String lang) throws IOException {
-		URL url = Util.getResourceByName("/languages/" + lang + ".json");
-		if(url != null) {
-			InputStream input = url.openStream();
+	public static void loadAndMerge(final String lang) throws IOException {
+		final URL url = Util.getResourceByName("/languages/" + lang + ".json");
+		if (url != null) {
+			final InputStream input = url.openStream();
 			try {
-				JSONObject obj = new JSONObject(new JSONTokener(input));
-				
-				JSONObject tokenObj = obj.getJSONObject("tokens");
-				
-				for(String s : (Set<String>) tokenObj.keySet()) {
+				final JSONObject obj = new JSONObject(new JSONTokener(input));
+
+				final JSONObject tokenObj = obj.getJSONObject("tokens");
+
+				for (final String s : (Set<String>) tokenObj.keySet()) {
 					tokens.put(s, tokenObj.getString(s));
 				}
 			} finally {
@@ -90,38 +126,5 @@ public class Language {
 		} else {
 			throw new IOException("Invalid language " + lang);
 		}
-	}
-
-	/**
-	 * Get a language string
-	 * @param token
-	 * 			The language token name
-	 * @param args
-	 * 			The language arguments
-	 * @return
-	 * 			The parsed language string, or "" if null
-	 */
-	public static String getString(String token, Object... args) {
-		String str = tokens.get(token);
-		
-		if(str == null) {
-			return "";
-		}
-		
-		if(str.indexOf('{') != -1) {
-			Matcher m = VAR_PATTERN.matcher(str);
-			
-			StringBuffer out = new StringBuffer();
-			while(m.find()) {
-				int paramIndex = Integer.parseInt(m.group(1));
-				if(args.length > paramIndex-1) {
-					m.appendReplacement(out, args[paramIndex-1].toString());
-				}
-			}
-			m.appendTail(out);
-			
-			str = out.toString();
-		}
-		return str;
 	}
 }

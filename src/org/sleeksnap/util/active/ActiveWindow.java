@@ -26,26 +26,26 @@ import java.awt.Rectangle;
  * 
  */
 public class ActiveWindow {
-	
-	/**
-	 * The window name
-	 */
-	private String name;
 
 	/**
 	 * The window's bounds
 	 */
-	private Rectangle bounds;
+	private final Rectangle bounds;
 
-	public ActiveWindow(String name, Rectangle bounds) {
+	/**
+	 * The window name
+	 */
+	private final String name;
+
+	public ActiveWindow(final String name, final Rectangle bounds) {
 		this.name = name;
 		this.bounds = bounds;
 	}
 
 	/**
 	 * Get the window's bounds as a rectangle
-	 * @return
-	 * 		A rectangle containing the window's bounds
+	 * 
+	 * @return A rectangle containing the window's bounds
 	 */
 	public Rectangle getBounds() {
 		return bounds;
@@ -53,8 +53,8 @@ public class ActiveWindow {
 
 	/**
 	 * Get the window name
-	 * @return
-	 * 		The window name
+	 * 
+	 * @return The window name
 	 */
 	public String getName() {
 		return name;

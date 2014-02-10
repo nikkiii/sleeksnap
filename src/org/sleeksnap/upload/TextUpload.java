@@ -24,34 +24,33 @@ import java.io.InputStream;
  * An upload commonly used for Pastebins which contains text only
  * 
  * @author Nikki
- *
+ * 
  */
 public class TextUpload implements Upload {
 
 	/**
 	 * The upload text data
 	 */
-	private String text;
-	
-	public TextUpload(String text) {
+	private final String text;
+
+	public TextUpload(final String text) {
 		this.text = text;
 	}
-	
+
 	@Override
 	public InputStream asInputStream() {
 		return new ByteArrayInputStream(text.getBytes());
 	}
-	
+
 	/**
 	 * Get this upload's contents
 	 * 
-	 * @return
-	 * 			The upload contents
+	 * @return The upload contents
 	 */
 	public String getText() {
 		return text;
 	}
-	
+
 	@Override
 	public String toString() {
 		return text;

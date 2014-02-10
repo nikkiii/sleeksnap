@@ -24,13 +24,13 @@ import java.lang.annotation.RetentionPolicy;
  * Uploader settings annotation
  * 
  * @author Nikki
- *
+ * 
  */
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Settings {
 
-	String[] required();
-
 	String[] optional();
+
+	String[] required();
 
 }

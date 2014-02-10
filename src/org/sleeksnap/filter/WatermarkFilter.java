@@ -31,27 +31,33 @@ import org.sleeksnap.util.Util;
  * A filter to attach your own watermark.
  * 
  * @author Nikki
- *
+ * 
  */
 public class WatermarkFilter implements UploadFilter<ImageUpload> {
-	
+
 	/**
-	 * The watermark file, if it exists it will be applied if the image is large enough to have it not get in the way.
+	 * The watermark file, if it exists it will be applied if the image is large
+	 * enough to have it not get in the way.
 	 */
-	private static final File watermarkFile = new File(Util.getWorkingDirectory(), "watermark.png");
+	private static final File watermarkFile = new File(
+			Util.getWorkingDirectory(), "watermark.png");
 
 	@Override
-	public ImageUpload filter(ImageUpload object) {
-		if(watermarkFile.exists()) {
-			BufferedImage image = object.getImage();
+	public ImageUpload filter(final ImageUpload object) {
+		if (watermarkFile.exists()) {
+			final BufferedImage image = object.getImage();
 			try {
-				BufferedImage watermark = ImageIO.read(watermarkFile);
-				if(image.getWidth() >= watermark.getWidth() && image.getHeight() >= watermark.getHeight()) {
-					Graphics g = image.getGraphics();
-					g.drawImage(watermark, image.getWidth()-watermark.getWidth(), image.getHeight()-watermark.getHeight(), watermark.getWidth(), watermark.getHeight(), null);
+				final BufferedImage watermark = ImageIO.read(watermarkFile);
+				if (image.getWidth() >= watermark.getWidth()
+						&& image.getHeight() >= watermark.getHeight()) {
+					final Graphics g = image.getGraphics();
+					g.drawImage(watermark,
+							image.getWidth() - watermark.getWidth(),
+							image.getHeight() - watermark.getHeight(),
+							watermark.getWidth(), watermark.getHeight(), null);
 					g.dispose();
 				}
-			} catch (IOException e) {
+			} catch (final IOException e) {
 				e.printStackTrace();
 			}
 		}

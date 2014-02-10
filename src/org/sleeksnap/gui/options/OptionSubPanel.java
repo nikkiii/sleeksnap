@@ -22,9 +22,14 @@ import javax.swing.JPanel;
 @SuppressWarnings("serial")
 public abstract class OptionSubPanel extends JPanel {
 
-	public abstract void initComponents();
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -9105961008289893065L;
 
 	public void doneBuilding() {
 		// Nothing
 	}
+
+	public abstract void initComponents();
 }

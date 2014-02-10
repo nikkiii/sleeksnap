@@ -31,19 +31,28 @@ import java.io.OutputStream;
  */
 public class StreamUtils {
 
+	public static void copy(final InputStream inputStream,
+			final OutputStream outputStream) throws IOException {
+		int read;
+		final byte[] buf = new byte[1024];
+		while ((read = inputStream.read(buf, 0, buf.length)) != -1) {
+			outputStream.write(buf, 0, read);
+		}
+	}
+
 	/**
 	 * Read all of the data from an InputStream into a string
+	 * 
 	 * @param inputStream
-	 * 			The stream to read from
-	 * @return
-	 * 			The data, lines separated by \n
+	 *            The stream to read from
+	 * @return The data, lines separated by \n
 	 * @throws IOException
-	 * 			If a problem occurred while reading
+	 *             If a problem occurred while reading
 	 */
-	public static String readContents(InputStream inputStream)
+	public static String readContents(final InputStream inputStream)
 			throws IOException {
-		StringBuilder contents = new StringBuilder();
-		BufferedReader reader = new BufferedReader(new InputStreamReader(
+		final StringBuilder contents = new StringBuilder();
+		final BufferedReader reader = new BufferedReader(new InputStreamReader(
 				inputStream));
 		try {
 			String line;
@@ -54,13 +63,5 @@ public class StreamUtils {
 			reader.close();
 		}
 		return contents.toString().trim();
-	}
-	
-	public static void copy(InputStream inputStream, OutputStream outputStream) throws IOException {
-		int read;
-		byte[] buf = new byte[1024];
-		while((read = inputStream.read(buf, 0, buf.length)) != -1) {
-			outputStream.write(buf, 0, read);
-		}
 	}
 }

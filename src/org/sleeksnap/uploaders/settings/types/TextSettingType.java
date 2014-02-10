@@ -26,23 +26,23 @@ import org.sleeksnap.uploaders.settings.UploaderSettingType;
  * The most basic setting type, a JTextField
  * 
  * @author Nikki
- *
+ * 
  */
 public class TextSettingType implements UploaderSettingType {
 
 	@Override
-	public JComponent constructComponent(String defaultValue) {
+	public JComponent constructComponent(final String defaultValue) {
 		return new JTextField(defaultValue.toString());
 	}
 
 	@Override
-	public void setValue(JComponent component, Object value) {
-		((JTextField) component).setText(value.toString());
+	public Object getValue(final JComponent component) {
+		return ((JTextField) component).getText();
 	}
 
 	@Override
-	public Object getValue(JComponent component) {
-		return ((JTextField) component).getText();
+	public void setValue(final JComponent component, final Object value) {
+		((JTextField) component).setText(value.toString());
 	}
 
 }

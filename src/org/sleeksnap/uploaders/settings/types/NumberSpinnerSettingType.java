@@ -32,39 +32,39 @@ import org.sleeksnap.util.Util;
  * Data names: default, min, max, step
  * 
  * @author Nikki
- *
+ * 
  */
 public class NumberSpinnerSettingType implements UploaderSettingType {
 
 	@Override
-	public JComponent constructComponent(String data) {
-		SpinnerNumberModel model = new SpinnerNumberModel();
-		Map<String, String> m = Util.parseDataList(data);
-		if(m.containsKey("default")) {
+	public JComponent constructComponent(final String data) {
+		final SpinnerNumberModel model = new SpinnerNumberModel();
+		final Map<String, String> m = Util.parseDataList(data);
+		if (m.containsKey("default")) {
 			model.setValue(Integer.parseInt(m.get("default")));
 		}
-		if(m.containsKey("min")) {
+		if (m.containsKey("min")) {
 			model.setMinimum(Integer.parseInt(m.get("min")));
 		}
-		if(m.containsKey("max")) {
+		if (m.containsKey("max")) {
 			model.setMaximum(Integer.parseInt(m.get("max")));
 		}
-		if(m.containsKey("step")) {
+		if (m.containsKey("step")) {
 			model.setStepSize(Integer.parseInt(m.get("step")));
 		}
 		return new JSpinner(model);
 	}
 
 	@Override
-	public void setValue(JComponent component, Object value) {
-		if(!value.toString().isEmpty()) {
-			((JSpinner) component).setValue(Integer.parseInt(value.toString()));
-		}
+	public Object getValue(final JComponent component) {
+		return ((JSpinner) component).getValue();
 	}
 
 	@Override
-	public Object getValue(JComponent component) {
-		return ((JSpinner) component).getValue();
+	public void setValue(final JComponent component, final Object value) {
+		if (!value.toString().isEmpty()) {
+			((JSpinner) component).setValue(Integer.parseInt(value.toString()));
+		}
 	}
 
 }

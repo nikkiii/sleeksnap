@@ -21,8 +21,8 @@ package org.sleeksnap.updater;
  * Updater mode declarations
  * 
  * @author Nikki
- *
+ * 
  */
 public enum UpdaterMode {
-	AUTOMATIC, PROMPT, MANUAL
+	AUTOMATIC, MANUAL, PROMPT
 }

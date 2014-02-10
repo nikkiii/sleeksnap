@@ -33,16 +33,16 @@ import org.sleeksnap.util.Util;
  * Loads uploaders from the uploaders plugin directory
  * 
  * @author Nikki
- *
+ * 
  */
 public class UploaderLoader {
-	
+
 	/**
 	 * The Screenshot program instance
 	 */
-	private ScreenSnapper snapper;
+	private final ScreenSnapper snapper;
 
-	public UploaderLoader(ScreenSnapper snapper) {
+	public UploaderLoader(final ScreenSnapper snapper) {
 		this.snapper = snapper;
 	}
 
@@ -51,91 +51,100 @@ public class UploaderLoader {
 	 */
 	public void load() throws Exception {
 		// Load custom uploaders
-		File dir = new File(Util.getWorkingDirectory(), "plugins/uploaders");
+		final File dir = new File(Util.getWorkingDirectory(),
+				"plugins/uploaders");
 		if (!dir.exists()) {
 			dir.mkdirs();
 		}
-		
-		ClassLoader fileLoader = new URLClassLoader(
-				new URL[] { dir.toURI().toURL() });
-		for (File f : dir.listFiles()) {
-			String name = f.getName();
+
+		final ClassLoader fileLoader = new URLClassLoader(new URL[] { dir
+				.toURI().toURL() });
+		for (final File f : dir.listFiles()) {
+			final String name = f.getName();
 			if (name.endsWith(".class") && !name.contains("$")) {
 				loadSingleClassUploader(fileLoader, f);
-			} else if(name.endsWith(".jar")) {
+			} else if (name.endsWith(".jar")) {
 				loadPackedUploader(f);
 			}
 		}
 	}
-	
-	/**
-	 * Load a single uploader class
-	 * @param loader
-	 * 			The class loader for the directory
-	 * @param file
-	 * 			The file to load
-	 */
-	private void loadSingleClassUploader(ClassLoader loader, File file) {
-		String name = file.getName().replaceAll(
-				".class", "");
-		try {
-			Class<?> c = loader.loadClass(name);
-			
-			Uploader<?> uploader = (Uploader<?>) c.newInstance();
-			
-			if (uploader == null)
-				throw new Exception();
-			
-			snapper.registerUploader(uploader);
-		} catch (Exception e) {
-			JOptionPane.showMessageDialog(null,
-				"An exception occured when loading " + name + " : " + e + ", it could be outdated.",
-				"Could not load uploader : " + name,
-				JOptionPane.ERROR_MESSAGE);
-		}
-	}
-	
+
 	/**
 	 * Load a packed uploader jar
+	 * 
 	 * @param file
-	 * 			The file to load
+	 *            The file to load
 	 */
-	private void loadPackedUploader(File file) {
-		String name = file.getName();
+	private void loadPackedUploader(final File file) {
+		final String name = file.getName();
 		try {
-			JarFile jar = new JarFile(file);
-			
-			ClassLoader loader = new URLClassLoader(new URL[] { file.toURI().toURL() });
-			
-			Manifest manifest = jar.getManifest();
-			
-			if(manifest != null) {
-				Attributes attrs = manifest.getMainAttributes();
-				
-				String uploaderClass = attrs.getValue(Attributes.Name.MAIN_CLASS);
-				
-				if(uploaderClass == null)
+			final JarFile jar = new JarFile(file);
+
+			final ClassLoader loader = new URLClassLoader(new URL[] { file
+					.toURI().toURL() });
+
+			final Manifest manifest = jar.getManifest();
+
+			if (manifest != null) {
+				final Attributes attrs = manifest.getMainAttributes();
+
+				final String uploaderClass = attrs
+						.getValue(Attributes.Name.MAIN_CLASS);
+
+				if (uploaderClass == null) {
 					throw new Exception("Unable to find Main-Class attribute");
-				
+				}
+
 				// Attempt to load it
-				
-				Class<?> c = loader.loadClass(uploaderClass);
-				
-				Uploader<?> uploader = (Uploader<?>) c.newInstance();
-				
-				if(uploader == null)
+
+				final Class<?> c = loader.loadClass(uploaderClass);
+
+				final Uploader<?> uploader = (Uploader<?>) c.newInstance();
+
+				if (uploader == null) {
 					throw new Exception();
-				
+				}
+
 				snapper.registerUploader(uploader);
 			} else {
 				throw new Exception("Unable to find Manifest file");
 			}
-			
+
 			jar.close();
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			JOptionPane.showMessageDialog(null,
-					"An exception occured when loading " + name + " : "
-							+ e + ", it could be outdated.",
+					"An exception occured when loading " + name + " : " + e
+							+ ", it could be outdated.",
+					"Could not load uploader : " + name,
+					JOptionPane.ERROR_MESSAGE);
+		}
+	}
+
+	/**
+	 * Load a single uploader class
+	 * 
+	 * @param loader
+	 *            The class loader for the directory
+	 * @param file
+	 *            The file to load
+	 */
+	private void loadSingleClassUploader(final ClassLoader loader,
+			final File file) {
+		final String name = file.getName().replaceAll(".class", "");
+		try {
+			final Class<?> c = loader.loadClass(name);
+
+			final Uploader<?> uploader = (Uploader<?>) c.newInstance();
+
+			if (uploader == null) {
+				throw new Exception();
+			}
+
+			snapper.registerUploader(uploader);
+		} catch (final Exception e) {
+			JOptionPane.showMessageDialog(null,
+					"An exception occured when loading " + name + " : " + e
+							+ ", it could be outdated.",
 					"Could not load uploader : " + name,
 					JOptionPane.ERROR_MESSAGE);
 		}
